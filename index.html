@@ -1,0 +1,1612 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Prospect Board</title>
+<style>
+:root{
+  --bg:#eceff4; --surface:#ffffff; --surface2:#f6f7fa; --border:#dfe3ea; --text:#1b2233; --muted:#6b7488;
+  --accent:#2f5bea; --accent-soft:#e6ecfd; --empty:#c9cedb; --danger:#d83a52; --hover:#f0f3fa; --shadow:0 8px 28px rgba(20,28,50,.18);
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#12151d; --surface:#1b2030; --surface2:#222839; --border:#2f3750; --text:#e8ebf4; --muted:#939cb3;
+    --accent:#7b9bff; --accent-soft:#26315a; --empty:#454e68; --danger:#ff6b81; --hover:#252c42; --shadow:0 8px 28px rgba(0,0,0,.5);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"]{
+    --bg:#12151d; --surface:#1b2030; --surface2:#222839; --border:#2f3750; --text:#e8ebf4; --muted:#939cb3;
+    --accent:#7b9bff; --accent-soft:#26315a; --empty:#454e68; --danger:#ff6b81; --hover:#252c42; --shadow:0 8px 28px rgba(0,0,0,.5);
+    color-scheme: dark;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{font:14px/1.4 "Avenir Next","Segoe UI",system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--text)}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+#app{display:flex;height:100vh;min-height:520px}
+
+/* sidebar */
+.side{width:230px;flex:none;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;padding:14px 10px}
+.brand{font-weight:700;font-size:16px;letter-spacing:-.2px;padding:2px 8px 14px}
+.brand small{display:block;font-weight:400;font-size:12px;color:var(--muted)}
+.boards{flex:1;overflow:auto;display:flex;flex-direction:column;gap:2px}
+.bitem{display:flex;align-items:center;gap:8px;text-align:left;border:0;background:none;padding:8px 10px;border-radius:8px;width:100%}
+.bitem:hover{background:var(--hover)}
+.bitem.on{background:var(--accent-soft);font-weight:600}
+.bitem .dot{width:8px;height:8px;border-radius:2px;background:var(--accent);flex:none}
+.bitem span.t{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.side-foot{border-top:1px solid var(--border);padding-top:10px;display:flex;flex-direction:column;gap:6px}
+.note{font-size:12px;color:var(--muted);padding:0 6px}
+
+/* buttons */
+.btn{border:1px solid var(--border);background:var(--surface);padding:6px 12px;border-radius:8px}
+.btn:hover{background:var(--hover)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn.primary:hover{filter:brightness(1.08)}
+.btn.ghost{border-color:transparent;background:none;color:var(--muted);text-align:left}
+.btn.ghost:hover{background:var(--hover);color:var(--text)}
+.btn.danger{color:var(--danger)}
+.icon{border:0;background:none;color:var(--muted);padding:2px 6px;border-radius:6px;line-height:1}
+.icon:hover{background:var(--hover);color:var(--text)}
+
+/* main */
+.main{flex:1;min-width:0;display:flex;flex-direction:column}
+.toolbar{display:flex;flex-wrap:wrap;align-items:center;gap:10px;padding:14px 20px;background:var(--surface);border-bottom:1px solid var(--border)}
+.title{font-size:20px;font-weight:700;letter-spacing:-.3px;border:0;background:none;padding:2px 6px;border-radius:6px;text-align:left}
+.title:hover{background:var(--hover)}
+.spacer{flex:1}
+.seg{display:inline-flex;border:1px solid var(--border);border-radius:8px;overflow:hidden}
+.seg button{border:0;background:var(--surface);padding:6px 12px}
+.seg button.on{background:var(--accent);color:#fff}
+.search{border:1px solid var(--border);background:var(--surface2);border-radius:8px;padding:6px 10px;width:200px}
+#body{flex:1;min-height:0;display:flex;flex-direction:column}
+.scroll{flex:1;overflow:auto;padding:16px 20px 60px}
+
+/* table */
+.tbl{min-width:max-content}
+.group{margin-bottom:26px}
+.ghead{display:flex;align-items:center;gap:6px;margin-bottom:6px;position:sticky;left:0;width:max-content}
+.ghead .gname{font-size:16px;font-weight:700;border:0;background:none;padding:2px 6px;border-radius:6px}
+.ghead .gname:hover{background:var(--hover)}
+.ghead .gcount{font-size:12px;color:var(--muted);margin-left:2px}
+.ghead input[type=color]{width:20px;height:20px;border:0;padding:0;background:none;cursor:pointer;opacity:.0;position:absolute;pointer-events:none}
+.swatch{width:14px;height:14px;border-radius:4px;border:0;padding:0;flex:none}
+.row{display:grid;align-items:stretch;background:var(--surface);border-bottom:1px solid var(--border)}
+.row .cell{display:flex;align-items:center;padding:0 8px;min-height:38px;border-right:1px solid var(--border);min-width:0}
+.row .cell:last-child{border-right:0}
+.row.hdr{background:var(--surface2);font-weight:600;color:var(--muted);border-top:1px solid var(--border);border-radius:8px 8px 0 0}
+.hcell{cursor:pointer;justify-content:center;gap:4px;user-select:none}
+.hcell:hover{background:var(--hover);color:var(--text)}
+.sticky0{position:sticky;left:0;z-index:2;background:inherit;padding:0 !important}
+.sticky1{position:sticky;left:64px;z-index:2;background:inherit}
+.stickyc{position:sticky;left:30px;z-index:2;background:inherit}
+.chk{justify-content:center;padding:0 !important}
+.gck{width:16px;height:16px;accent-color:var(--accent);margin:0 4px;cursor:pointer;flex:none}
+.cell input[type=checkbox]{cursor:pointer}
+.row.item.sel,.row.item.sel:hover{background:var(--accent-soft)}
+.bulkbar{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);z-index:45;background:var(--text);color:var(--surface);border-radius:12px;padding:8px 10px;display:flex;gap:4px;align-items:center;box-shadow:var(--shadow);max-width:calc(100vw - 24px);flex-wrap:wrap;justify-content:center}
+.bulkbar button{border:0;background:none;color:inherit;padding:6px 10px;border-radius:8px;white-space:nowrap}
+.bulkbar button:hover{background:rgba(128,128,128,.3)}
+.bulkbar .bdanger{color:#ff8a9b}
+.bcount{background:var(--accent);color:#fff;border-radius:8px;padding:2px 9px;font-weight:700;margin-right:6px}
+.rollup{width:100%;display:flex;justify-content:center}
+.rollup span.pill{background:#579bfc;color:#fff;border-radius:14px;padding:3px 10px;font-weight:600;white-space:nowrap}
+.rollup span.pill i{font-style:normal;margin-right:6px;opacity:.85}
+.subpanel .row.item.sel,.subpanel .row.item.sel:hover{background:var(--accent-soft)}
+.iconbtn{padding:6px 8px;display:inline-flex;align-items:center;justify-content:center}
+.iconbtn svg{display:block}
+.side.hidden{display:none}
+.bitem[draggable=true]{cursor:grab}
+.bitem.bover{box-shadow:0 -2px 0 0 var(--accent)}
+.hcell{position:relative}
+.rzp{position:relative}
+.rz{position:absolute;right:-4px;top:0;bottom:0;width:9px;cursor:col-resize;z-index:4}
+.rz::after{content:"";position:absolute;left:4px;top:25%;bottom:25%;width:2px;border-radius:1px;background:transparent}
+.hcell:hover .rz::after,.rzp:hover .rz::after,.sticky1:hover .rz::after,.rz.on::after{background:var(--accent);opacity:.7}
+.hovercard{position:fixed;z-index:70;max-width:min(460px,92vw);min-width:200px;max-height:50vh;overflow:auto;background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:10px;box-shadow:var(--shadow);padding:10px 14px 12px}
+.hovercard small{display:block;color:var(--muted);font-weight:700;letter-spacing:.3px;text-transform:uppercase;font-size:11px;margin-bottom:6px}
+.hovercard .ht{white-space:pre-wrap;overflow-wrap:anywhere}
+.hovercard a{color:var(--accent)}
+.dot{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:8px}
+.gbar{border-radius:6px 0 0 6px}
+.row.item:hover{background:var(--hover)}
+.row.item .del{opacity:0}
+.row.item:hover .del{opacity:1}
+.row.dragover{box-shadow:0 -2px 0 0 var(--accent)}
+.handle{cursor:grab;color:var(--muted);width:100%;text-align:center;opacity:0;user-select:none;font-size:12px}
+.row.item:hover .handle{opacity:1}
+.name{display:flex;align-items:center;gap:4px;width:100%}
+.name input{flex:1;min-width:0}
+.cell input[type=text],.cell input[type=number],.cell input[type=date]{width:100%;border:1px solid transparent;background:none;padding:5px 6px;border-radius:6px}
+.cell input:hover{border-color:var(--border)}
+.cell input:focus{border-color:var(--accent);background:var(--surface)}
+.cell input[type=date]{text-align:center}
+.cell input.late{color:var(--danger);font-weight:600}
+.cell input[type=checkbox]{width:18px;height:18px;margin:0 auto;accent-color:var(--accent)}
+.cell.center{justify-content:center}
+.cell a.ext{color:var(--accent);text-decoration:none;padding:0 4px}
+.status{width:100%;height:100%;min-height:38px;border:0;color:#fff;font-weight:600;padding:0 8px;margin:0}
+.status.empty{background:var(--empty);color:var(--surface)}
+.addrow input{width:100%;border:0;background:none;padding:8px 6px;color:var(--text)}
+.addrow input::placeholder{color:var(--muted)}
+.summary{background:var(--surface);border-bottom:1px solid var(--border)}
+.sumbar{display:flex;height:22px;width:100%;border-radius:4px;overflow:hidden;background:var(--empty)}
+.sumbar i{display:block;height:100%}
+.hide{display:none !important}
+.iw{display:block}
+.hcell.colover{box-shadow:inset 3px 0 0 var(--accent)}
+.hcell[draggable=true]{cursor:pointer}
+.ubtn{position:relative;flex:none;display:inline-flex;align-items:center;opacity:.55}
+.row:hover .ubtn,.ubtn.has,.ubtn:focus-visible{opacity:1}
+.ubtn.has{color:var(--accent)}
+.ubtn svg{display:block}
+.ucount{position:absolute;top:-3px;right:-2px;background:var(--accent);color:#fff;border-radius:8px;font-size:10px;font-weight:700;min-width:15px;line-height:15px;text-align:center;padding:0 3px}
+.updpanel{position:fixed;top:0;right:0;bottom:0;width:min(460px,100vw);background:var(--surface);border-left:1px solid var(--border);box-shadow:var(--shadow);z-index:40;display:flex;flex-direction:column}
+.uhead{padding:16px 18px 12px;border-bottom:1px solid var(--border);display:flex;gap:10px;align-items:flex-start}
+.uhead .ut{flex:1;min-width:0}
+.uhead small{display:block;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.uhead h2{margin:2px 0 0;font-size:19px;letter-spacing:-.2px;overflow-wrap:anywhere}
+.ubodywrap{flex:1;overflow:auto;padding:14px 18px 40px;display:flex;flex-direction:column;gap:14px}
+.ucomposer{width:100%;border:1px solid var(--border);background:var(--surface2);border-radius:10px;padding:10px 12px;resize:vertical;min-height:70px;font:inherit}
+.ucomposer:focus{border-color:var(--accent);outline:0}
+.crow{display:flex;justify-content:space-between;align-items:center;margin-top:8px;gap:8px}
+.linkbtn{border:0;background:none;color:var(--muted);padding:0;font-size:12px}
+.linkbtn:hover{color:var(--text);text-decoration:underline}
+.ucard{border:1px solid var(--border);border-radius:12px;background:var(--surface)}
+.uin{padding:14px}
+.uauthor{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.avatar{width:32px;height:32px;border-radius:50%;background:var(--accent);color:#fff;font-weight:700;font-size:12px;display:flex;align-items:center;justify-content:center;flex:none}
+.uauthor .who{flex:1;min-width:0}
+.uauthor b{margin-right:6px}
+.uauthor span{color:var(--muted);font-size:12px}
+.utext{white-space:pre-wrap;overflow-wrap:anywhere}
+.utext.clamp{max-height:11em;overflow:hidden;-webkit-mask-image:linear-gradient(#000 70%,transparent);mask-image:linear-gradient(#000 70%,transparent)}
+.utext a{color:var(--accent)}
+.uacts{display:flex;border-top:1px solid var(--border)}
+.uacts button{flex:1;border:0;background:none;padding:9px;color:var(--muted)}
+.uacts button:hover{background:var(--hover);color:var(--text)}
+.uacts button.on{color:var(--accent);font-weight:600}
+.ureplies{border-top:1px solid var(--border);background:var(--surface2);border-radius:0 0 12px 12px;padding:10px 14px;display:flex;flex-direction:column;gap:12px}
+.ureplies .uauthor{margin-bottom:4px}
+.ureplies .avatar{width:26px;height:26px;font-size:10px}
+.uempty{color:var(--muted);text-align:center;padding:30px 10px}
+.ghandle{cursor:grab;color:var(--muted);user-select:none;font-size:12px;padding:2px 4px;border-radius:6px}
+.ghandle:hover{background:var(--hover);color:var(--text)}
+.ghead.gover{box-shadow:0 3px 0 0 var(--accent)}
+.chev{padding:2px 5px;flex:none}
+.badge{border:0;background:var(--accent-soft);color:var(--accent);border-radius:10px;padding:0 8px;font-size:12px;font-weight:700;flex:none;line-height:20px}
+.subpanel{margin:4px 0 16px 30px;border-left:4px solid var(--accent);width:max-content;background:var(--surface)}
+.subpanel .row.hdr{border-radius:0;border-top:0}
+.subpanel .addrow input{padding:7px 6px}
+.toolbar .btn{white-space:nowrap}
+
+/* kanban */
+.kbar{display:flex;gap:10px;align-items:center;padding:12px 20px 0;color:var(--muted)}
+.kbar select{border:1px solid var(--border);background:var(--surface);padding:4px 8px;border-radius:8px}
+.lanes{display:flex;gap:14px;align-items:flex-start;min-width:max-content}
+.lane{width:270px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:8px;display:flex;flex-direction:column;gap:8px}
+.lane.over{outline:2px dashed var(--accent)}
+.lhead{color:#fff;font-weight:700;padding:6px 10px;border-radius:7px;display:flex;justify-content:space-between}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px;cursor:grab}
+.card:hover{border-color:var(--accent)}
+.card b{display:block;margin-bottom:4px}
+.card .meta{font-size:12px;color:var(--muted)}
+.emptymsg{padding:60px 20px;text-align:center;color:var(--muted)}
+
+/* popups + modals */
+.pop{position:fixed;z-index:50;background:var(--surface);border:1px solid var(--border);border-radius:10px;box-shadow:var(--shadow);padding:6px;min-width:170px;max-height:70vh;overflow:auto;display:flex;flex-direction:column;gap:4px}
+.pop button.opt{border:0;border-radius:6px;padding:7px 10px;color:#fff;font-weight:600;text-align:center}
+.pop button.mi{border:0;background:none;text-align:left;padding:7px 10px;border-radius:6px}
+.pop button.mi:hover{background:var(--hover)}
+.pop button.mi.danger{color:var(--danger)}
+.pop hr{border:0;border-top:1px solid var(--border);margin:2px 0;width:100%}
+.overlay{position:fixed;inset:0;background:rgba(10,14,25,.45);display:flex;align-items:center;justify-content:center;z-index:60;padding:16px}
+.modal{background:var(--surface);border-radius:14px;box-shadow:var(--shadow);width:min(520px,100%);max-height:88vh;overflow:auto;padding:20px}
+.modal h3{margin:0 0 14px;font-size:17px}
+.modal label{display:block;font-size:12px;color:var(--muted);margin:10px 0 3px}
+.modal input[type=text],.modal input[type=number],.modal input[type=date],.modal select{width:100%;border:1px solid var(--border);background:var(--surface2);border-radius:8px;padding:8px 10px}
+.mfoot{display:flex;justify-content:flex-end;gap:8px;margin-top:18px}
+.lblrow{display:flex;gap:8px;align-items:center;margin-bottom:6px}
+.lblrow input[type=color]{width:34px;height:34px;border:0;padding:0;background:none;flex:none}
+.field .status{border-radius:8px;height:36px}
+.toast{position:fixed;left:50%;bottom:84px;transform:translateX(-50%);background:var(--text);color:var(--surface);padding:10px 16px;border-radius:10px;z-index:80;display:flex;gap:14px;align-items:center;box-shadow:var(--shadow)}
+.toast button{border:0;background:none;color:var(--accent);font-weight:700;padding:0}
+
+@media (max-width:760px){
+  #app{flex-direction:column}
+  .side{width:100%;flex-direction:row;align-items:center;padding:8px;gap:8px;overflow:auto;border-right:0;border-bottom:1px solid var(--border)}
+  .brand{display:none}.boards{flex-direction:row;flex:none}.bitem{white-space:nowrap;width:auto}
+  .side-foot{border:0;padding:0;flex-direction:row}.note{display:none}
+  .search{width:140px}
+}
+@media (prefers-reduced-motion: no-preference){
+  .modal{animation:pop .12s ease-out}
+  @keyframes pop{from{transform:scale(.97);opacity:0}to{transform:none;opacity:1}}
+}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+"use strict";
+/* ---------- tiny helpers ---------- */
+const $ = (s, r=document) => r.querySelector(s);
+const uid = () => Math.random().toString(36).slice(2, 9);
+const COLORS = ['#00c875','#fdab3d','#df2f4a','#579bfc','#a25ddc','#ff158a','#037f4c','#9cd326','#4eccc6','#7f5347','#808080','#175a63'];
+const TYPES = {text:'Text', status:'Status', date:'Date', number:'Number', link:'Link', checkbox:'Checkbox'};
+const COLW = {text:190, status:150, date:176, number:120, link:190, checkbox:90};
+const colW = c => c.w || COLW[c.type];
+
+function h(tag, props, ...kids){
+  const e = document.createElement(tag);
+  for (const k in (props||{})){
+    const v = props[k];
+    if (k === 'class') e.className = v;
+    else if (k === 'style' && typeof v === 'object') Object.assign(e.style, v);
+    else if (k.startsWith('on')) e.addEventListener(k.slice(2), v);
+    else if (v === true) e.setAttribute(k, '');
+    else if (v !== false && v != null) e.setAttribute(k, v);
+  }
+  for (const c of kids.flat(Infinity)){
+    if (c == null || c === false) continue;
+    e.append(c.nodeType ? c : document.createTextNode(c));
+  }
+  return e;
+}
+
+/* ---------- storage (works as a Claude artifact AND as a downloaded file) ---------- */
+const KEY = 'prospect-board-v1';
+const store = {
+  mode: 'none',
+  async load(){
+    try { if (window.storage){ const r = await window.storage.get(KEY); if (r && r.value){ this.mode='artifact'; return JSON.parse(r.value); } } } catch(e){}
+    try { const v = localStorage.getItem(KEY); if (v){ this.mode='browser'; return JSON.parse(v); } } catch(e){}
+    return null;
+  },
+  async save(d){
+    const s = JSON.stringify(d);
+    try { if (window.storage){ await window.storage.set(KEY, s); this.mode='artifact'; return true; } } catch(e){}
+    try { localStorage.setItem(KEY, s); this.mode='browser'; return true; } catch(e){}
+    this.mode = 'none'; return false;
+  }
+};
+
+/* ---------- state ---------- */
+let S;
+const ui = {view:'table', search:'', sort:null, kcol:null, pop:null, onRefresh:null, drag:null, dragIds:null, sel:new Set(), selS:new Set(), anchor:null, anchorG:null, anchorS:null, dragGroup:null, dragCol:null, panel:null, groupBy:null, vcol:{}};
+const updsOf = r => r.updates || (r.updates = []);
+const subsOf = i => i.subs || (i.subs = []);
+const vis = b => b.columns.filter(c => !c.hidden);
+const plural = (w, n) => n === 1 ? w : (/[^aeiou]y$/i.test(w) ? w.slice(0, -1) + 'ies' : w + 's');
+let saveTimer;
+function save(){
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(async () => { await store.save(S); updateNote(); bkSchedule(); }, 250);
+}
+function updateNote(){
+  const n = $('#storenote'); if (!n) return;
+  const line1 = store.mode === 'none' ? 'Not saving in this view. Use Data > Back up everything.' : 'Saved automatically in this browser.';
+  let line2, action = null;
+  if (!bkSupported()) line2 = 'Automatic file backup needs Chrome or Edge.';
+  else if (!bk.dir){ line2 = 'No automatic backup yet.'; action = ['Set up', openBackupModal]; }
+  else if (bk.perm !== 'granted'){ line2 = 'Backup folder needs permission.'; action = ['Reconnect', async () => { if (await bkCheckPerm(true)) await bkRun(); updateNote(); }]; }
+  else if (bk.err){ line2 = 'Backup problem.'; action = ['Details', openBackupModal]; }
+  else line2 = 'Last file backup: ' + (bk.last ? ago2(bk.last) : 'pending');
+  n.replaceChildren(h('div', {}, line1), h('div', {style:{marginTop:'4px'}}, line2 + ' ', action ? h('button', {class:'linkbtn', onclick:action[1]}, action[0]) : null));
+}
+const board = () => S.boards.find(b => b.id === S.active) || S.boards[0];
+
+function opts(list){ return list.map(([name,color]) => ({id:uid(), name, color})); }
+function defaultSubColumns(){
+  return [
+    {id:uid(), name:'Title', type:'text'},
+    {id:uid(), name:'Status', type:'status', options:opts([['Not started','#808080'],['Working on it','#fdab3d'],['Replied','#579bfc'],['Meeting set','#a25ddc'],['Not interested','#df2f4a']])},
+    {id:uid(), name:'Last outreach', type:'date'},
+    {id:uid(), name:'Phone number', type:'text'},
+    {id:uid(), name:'Email', type:'text'},
+    {id:uid(), name:'Notes', type:'text'}
+  ];
+}
+function normalize(d){
+  d.boards.forEach(b => {
+    b.itemLabel = b.itemLabel || 'Item'; b.subLabel = b.subLabel || 'Subitem'; b.updates = b.updates || [];
+    if (!b.subColumns) b.subColumns = defaultSubColumns();
+    b.groups.forEach(g => g.items.forEach(i => { if (!i.subs) i.subs = []; }));
+  });
+  if (!d.active || !d.boards.find(b => b.id === d.active)) d.active = d.boards[0].id;
+  d.prefs = d.prefs || {};
+  return d;
+}
+function prospectingBoard(){
+  const status = opts([['Not started','#808080'],['Outreached','#fdd835'],['Replied','#579bfc'],['Meeting set','#a25ddc'],['Proposal','#ff158a'],['Won','#00c875'],['Not a fit','#df2f4a']]);
+  const flag = opts([['Priority','#fdd835'],['Follow up','#fdab3d'],['On hold','#808080']]);
+  const ind = opts([['Events & Hospitality','#a25ddc'],['Home Improvement','#579bfc'],['Manufacturing','#fdab3d'],['Healthcare','#00c875'],['Other','#808080']]);
+  const c = {
+    status:{id:uid(),name:'Status',type:'status',options:status},
+    last:{id:uid(),name:'Last outreach',type:'date'},
+    notes:{id:uid(),name:'Notes',type:'text'},
+    web:{id:uid(),name:'Website',type:'link'},
+    phone:{id:uid(),name:'Phone number',type:'text'},
+    sf:{id:uid(),name:'Salesforce',type:'link'},
+    flag:{id:uid(),name:'Flag',type:'status',options:flag},
+    added:{id:uid(),name:'Date added',type:'date'},
+    ind:{id:uid(),name:'Industry/Category',type:'status',options:ind}
+  };
+  const sc = defaultSubColumns();
+  const [sTitle, sStatus, sLast, sPhone, sEmail, sNotes] = sc;
+  const so = sStatus.options;
+  c.last.rollup = {source:sLast.id, mode:'range'};
+  const iso = d => { const x = new Date(); x.setDate(x.getDate() + d); return x.getFullYear()+'-'+String(x.getMonth()+1).padStart(2,'0')+'-'+String(x.getDate()).padStart(2,'0'); };
+  const sub = (name, v) => ({id:uid(), name, v});
+  const item = (name, v, subs, open) => ({id:uid(), name, v, subs:subs || [], open:!!open});
+  return {
+    id:uid(), name:'Prospecting Board', itemLabel:'Company', subLabel:'Contact',
+    columns:Object.values(c), subColumns:sc,
+    groups:[
+      {id:uid(), name:'Prospects/Leads', color:'#579bfc', collapsed:false, items:[
+        item('Example Brewing Co', {[c.status.id]:status[1].id,[c.last.id]:iso(-2),[c.notes.id]:'Available, $12k budget',[c.flag.id]:flag[0].id,[c.added.id]:iso(-9),[c.ind.id]:ind[0].id}, [
+          sub('Alex Morgan', {[sTitle.id]:'Chief Marketing Officer',[sStatus.id]:so[1].id,[sLast.id]:iso(-2)}),
+          sub('Riley Chen', {[sTitle.id]:'Chief Brand Officer',[sStatus.id]:so[1].id,[sLast.id]:iso(-2)})
+        ], true),
+        item('Sample Hardware Inc', {[c.status.id]:status[0].id,[c.flag.id]:flag[0].id,[c.added.id]:iso(-3),[c.ind.id]:ind[1].id}, [
+          sub('Sales / General', {[sPhone.id]:'555-010-0199'})
+        ], true)
+      ]},
+      {id:uid(), name:'Active conversations', color:'#a25ddc', collapsed:false, items:[
+        item('Demo Partners LLC', {[c.status.id]:status[3].id,[c.last.id]:iso(-1),[c.added.id]:iso(-20),[c.ind.id]:ind[4].id}, [
+          sub('Taylor Park', {[sTitle.id]:'VP Operations',[sStatus.id]:so[3].id,[sLast.id]:iso(-1),[sEmail.id]:'taylor@example.com'})
+        ])
+      ]},
+      {id:uid(), name:'Closed / parked', color:'#808080', collapsed:false, items:[]}
+    ]
+  };
+}
+function blankBoard(name){
+  const st = opts([['Done','#00c875'],['Working on it','#fdab3d'],['Stuck','#df2f4a']]);
+  return {id:uid(), name, itemLabel:'Item', subLabel:'Subitem', columns:[
+    {id:uid(),name:'Status',type:'status',options:st},
+    {id:uid(),name:'Date',type:'date'},
+    {id:uid(),name:'Notes',type:'text'}
+  ], subColumns:defaultSubColumns(), groups:[{id:uid(), name:'Group 1', color:COLORS[3], collapsed:false, items:[]}]};
+}
+function defaultState(){ const b = prospectingBoard(); return {boards:[b], active:b.id}; }
+
+/* ---------- popups, modals, toast ---------- */
+function closePop(){ if (ui.pop){ ui.pop.remove(); ui.pop = null; } }
+document.addEventListener('mousedown', e => { if (ui.pop && !ui.pop.contains(e.target)) closePop(); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closePop(); });
+function popup(anchor, ...content){
+  closePop();
+  const p = h('div', {class:'pop'}, content);
+  document.body.append(p);
+  const r = anchor.getBoundingClientRect();
+  p.style.left = Math.max(8, Math.min(r.left, innerWidth - p.offsetWidth - 8)) + 'px';
+  const below = r.bottom + 4, fits = below + p.offsetHeight + 8 <= innerHeight;
+  p.style.top = Math.max(8, fits ? below : Math.min(r.top - p.offsetHeight - 4, innerHeight - p.offsetHeight - 8)) + 'px';
+  ui.pop = p; return p;
+}
+function menuItem(label, fn, danger){
+  return h('button', {class:'mi' + (danger ? ' danger' : ''), onclick:() => { closePop(); fn(); }}, label);
+}
+function modal(title, bodyEl, buttons, onClose){
+  const ov = h('div', {class:'overlay', onmousedown:e => { if (e.target === ov) close(); }});
+  const close = () => { if (!ov.isConnected) return; ov.remove(); document.removeEventListener('keydown', esc); if (onClose) onClose(); };
+  const esc = e => { if (e.key === 'Escape') close(); };
+  document.addEventListener('keydown', esc);
+  const foot = h('div', {class:'mfoot'}, (buttons||[]).map(b =>
+    h('button', {class:'btn' + (b.primary ? ' primary' : '') + (b.danger ? ' danger' : ''), onclick:() => { if (b.fn ? b.fn(close) !== false : true) { if (!b.keep) close(); } }}, b.label)));
+  ov.append(h('div', {class:'modal', role:'dialog', 'aria-label':title}, h('h3', {}, title), bodyEl, foot));
+  document.body.append(ov);
+  const first = ov.querySelector('input,select'); if (first) first.focus();
+  return close;
+}
+function ask(title, label, value, cb, okLabel){
+  const inp = h('input', {type:'text', value:value || ''});
+  const submit = close => { const v = inp.value.trim(); if (!v) return false; cb(v); };
+  let closeFn;
+  inp.addEventListener('keydown', e => { if (e.key === 'Enter'){ if (submit() !== false) closeFn(); } });
+  closeFn = modal(title, h('div', {}, h('label', {}, label), inp), [
+    {label:'Cancel'}, {label:okLabel || 'Save', primary:true, fn:submit}
+  ]);
+  inp.select();
+}
+function confirmBox(msg, okLabel, cb){
+  modal('Are you sure?', h('p', {}, msg), [{label:'Cancel'}, {label:okLabel, danger:true, fn:() => { cb(); }}]);
+}
+function toast(msg, undo){
+  const old = $('.toast'); if (old) old.remove();
+  const t = h('div', {class:'toast'}, msg, undo && h('button', {onclick:() => { undo(); t.remove(); }}, 'Undo'));
+  document.body.append(t); setTimeout(() => t.remove(), 6000);
+}
+
+/* ---------- data helpers ---------- */
+const optOf = (col, id) => (col.options || []).find(o => o.id === id);
+function matches(item, b){
+  const q = ui.search.trim().toLowerCase(); if (!q) return true;
+  const uhit = rec => (rec.updates || []).some(u => (u.text || '').toLowerCase().includes(q) || (u.replies || []).some(r => (r.text || '').toLowerCase().includes(q)));
+  const hit = (rec, cols) => (rec.name || '').toLowerCase().includes(q) || uhit(rec) || cols.some(c => {
+    const v = rec.v[c.id]; if (v == null || v === '' || v === false) return false;
+    if (c.type === 'status') { const o = optOf(c, v); return !!o && o.name.toLowerCase().includes(q); }
+    return String(v).toLowerCase().includes(q);
+  });
+  return hit(item, b.columns) || subsOf(item).some(sb => hit(sb, b.subColumns));
+}
+function visibleItems(g, b){
+  let list = g.items.filter(i => matches(i, b));
+  if (ui.sort){
+    const col = b.columns.find(c => c.id === ui.sort.col);
+    if (col){
+      const key = i => {
+        const v = effVal(col, i);
+        if (v == null || v === '' || v === false) return null;
+        if (col.type === 'status') return (col.options || []).findIndex(o => o.id === v);
+        if (col.type === 'number') return parseFloat(v);
+        return String(v).toLowerCase();
+      };
+      list = [...list].sort((a, z) => {
+        const x = key(a), y = key(z);
+        if (x === null && y === null) return 0;
+        if (x === null) return 1; if (y === null) return -1;
+        return (x < y ? -1 : x > y ? 1 : 0) * ui.sort.dir;
+      });
+    }
+  }
+  return list;
+}
+function findItem(id){
+  for (const g of board().groups){ const i = g.items.find(x => x.id === id); if (i) return {item:i, group:g}; }
+  return null;
+}
+const todayISO = () => { const d = new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); };
+const refresh = () => { save(); renderBody(); if (ui.onRefresh) ui.onRefresh(); };
+
+/* ---------- date roll-ups (contact dates summarised on the company row) ---------- */
+const parseISO = s => { const [y, m, d] = s.split('-').map(Number); return new Date(y, m - 1, d); };
+const fmtDay = (s, withYear) => parseISO(s).toLocaleDateString(undefined, {month:'short', day:'numeric', year:withYear ? 'numeric' : undefined});
+function rollupOf(col, item){
+  if (!col.rollup || !item.subs) return null;
+  const sc = board().subColumns.find(c => c.id === col.rollup.source && c.type === 'date'); if (!sc) return null;
+  const ds = item.subs.map(sb => sb.v[sc.id]).filter(Boolean).sort();
+  return ds.length ? {min:ds[0], max:ds[ds.length - 1], n:ds.length} : null;
+}
+function effVal(col, item){
+  if (col.type === 'date' && col.rollup){ const r = rollupOf(col, item); if (r) return col.rollup.mode === 'earliest' ? r.min : r.max; }
+  return item.v[col.id];
+}
+function fmtRollup(col, r){
+  const yr = new Date().getFullYear(); const y = s => parseISO(s).getFullYear() !== yr;
+  if (col.rollup.mode === 'range' && r.min !== r.max){ const wy = y(r.min) || y(r.max); return fmtDay(r.min, wy) + ' – ' + fmtDay(r.max, wy); }
+  const d = col.rollup.mode === 'earliest' ? r.min : r.max; return fmtDay(d, y(d));
+}
+function rollupDialog(b, col){
+  const dcols = b.subColumns.filter(c => c.type === 'date');
+  if (!dcols.length){ toast('Add a Date column to the contact rows first.'); return; }
+  const src = h('select', {}, dcols.map(c => h('option', {value:c.id, selected:!!(col.rollup && col.rollup.source === c.id)}, c.name)));
+  const cur = col.rollup ? col.rollup.mode : 'range';
+  const mode = h('select', {}, [['range', 'Range (earliest – latest)'], ['latest', 'Latest date'], ['earliest', 'Earliest date']].map(([v, l]) => h('option', {value:v, selected:cur === v}, l)));
+  modal('Roll up "' + col.name + '"', h('div', {},
+    h('p', {style:{marginTop:0}}, 'Summarise the contact dates on each company row. Companies whose contacts have no dates keep their own date, which you can still edit.'),
+    h('label', {}, 'Contact date column'), src, h('label', {}, 'Show'), mode),
+    [{label:'Cancel'}, {label:'Apply', primary:true, fn:() => { col.rollup = {source:src.value, mode:mode.value}; save(); renderBody(); }}]);
+}
+
+/* ---------- cell editors (shared by table, cards and detail dialog) ---------- */
+function cellEditor(col, item){
+  const v = item.v[col.id];
+  if (col.type === 'status'){
+    const o = optOf(col, v);
+    return h('button', {class:'status' + (o ? '' : ' empty'), style:o ? {background:o.color} : {}, onclick:e => statusPop(e.currentTarget, col, item)}, o ? o.name : '–');
+  }
+  if (col.type === 'checkbox'){
+    return h('input', {type:'checkbox', checked:!!v, onchange:e => { item.v[col.id] = e.target.checked; save(); }});
+  }
+  if (col.type === 'date' && col.rollup){
+    const r = rollupOf(col, item);
+    if (r) return h('div', {class:'rollup', title:'Rolled up from ' + r.n + (r.n === 1 ? ' contact date' : ' contact dates') + '. Edit the dates on the contact rows.'}, h('span', {class:'pill'}, h('i', {}, '∑'), fmtRollup(col, r)));
+  }
+  if (col.type === 'date'){
+    const late = /next|due/i.test(col.name) && v && v < todayISO();
+    return h('input', {type:'date', value:v || '', class:late ? 'late' : '', onchange:e => { item.v[col.id] = e.target.value; refresh(); }});
+  }
+  if (col.type === 'number'){
+    return h('input', {type:'number', value:v ?? '', oninput:e => { item.v[col.id] = e.target.value; save(); }});
+  }
+  if (col.type === 'link'){
+    const wrap = h('div', {style:{display:'flex',alignItems:'center',width:'100%'}});
+    const inp = h('input', {type:'text', value:v || '', placeholder:'https://', oninput:e => { item.v[col.id] = e.target.value; save(); a.hidden = !e.target.value; }});
+    const a = h('a', {class:'ext', target:'_blank', rel:'noopener', title:'Open link', onclick:e => { const u = inp.value.trim(); a.href = /^https?:\/\//i.test(u) ? u : 'https://' + u; }}, '↗');
+    a.hidden = !v; wrap.append(inp, a); return wrap;
+  }
+  const inp = h('input', {type:'text', value:v || '', 'data-tip':col.name, oninput:e => { item.v[col.id] = e.target.value; save(); }});
+  tipData.set(inp, () => item.v[col.id] || '');
+  return inp;
+}
+const tipData = new WeakMap();
+let tipTimer = 0, tipHideTimer = 0, tipEl = null, tipFor = null;
+function hideTip(){ clearTimeout(tipTimer); clearTimeout(tipHideTimer); if (tipEl){ tipEl.remove(); tipEl = null; } tipFor = null; }
+function showTip(inp){
+  const get = tipData.get(inp); if (!get || !inp.isConnected) return;
+  const text = String(get() || ''); if (!text.trim()) return;
+  if (document.activeElement === inp) return;
+  if (!(inp.scrollWidth > inp.clientWidth + 1) && !text.includes('\n')) return;
+  hideTip(); tipFor = inp;
+  const card = h('div', {class:'hovercard', role:'tooltip'}, h('small', {}, inp.getAttribute('data-tip') || ''), h('div', {class:'ht'}, linkify(text)));
+  document.body.append(card); tipEl = card;
+  const r = inp.getBoundingClientRect();
+  card.style.left = Math.max(8, Math.min(r.left, innerWidth - card.offsetWidth - 8)) + 'px';
+  const below = r.bottom + 4;
+  card.style.top = Math.max(8, below + card.offsetHeight + 8 <= innerHeight ? below : r.top - card.offsetHeight - 4) + 'px';
+}
+document.addEventListener('mouseover', e => {
+  const t = e.target; if (!t || !t.closest) return;
+  if (t.matches('input[data-tip]')){
+    clearTimeout(tipHideTimer);
+    if (tipFor === t) return;
+    clearTimeout(tipTimer); tipTimer = setTimeout(() => showTip(t), 280);
+  } else if (tipEl && tipEl.contains(t)) clearTimeout(tipHideTimer);
+});
+document.addEventListener('mouseout', e => {
+  const t = e.target; if (!t || !t.closest) return;
+  if (t.matches('input[data-tip]') || (tipEl && tipEl.contains(t))){ clearTimeout(tipTimer); clearTimeout(tipHideTimer); tipHideTimer = setTimeout(hideTip, 220); }
+});
+document.addEventListener('focusin', hideTip);
+document.addEventListener('keydown', hideTip);
+document.addEventListener('scroll', e => { if (tipEl && (e.target === tipEl || tipEl.contains(e.target))) return; hideTip(); }, true);
+function statusPop(anchor, col, item){
+  const set = id => { if (id) item.v[col.id] = id; else delete item.v[col.id]; closePop(); refresh(); };
+  popup(anchor,
+    (col.options || []).map(o => h('button', {class:'opt', style:{background:o.color}, onclick:() => set(o.id)}, o.name)),
+    h('hr'),
+    h('button', {class:'mi', onclick:() => set(null)}, 'Clear'),
+    h('button', {class:'mi', onclick:() => { closePop(); editLabels(col); }}, 'Edit labels')
+  );
+}
+
+/* ---------- table view ---------- */
+function colTemplate(b){ return `30px 34px ${b.nameW || 300}px ${vis(b).map(c => colW(c) + 'px').join(' ')} 44px`; }
+function subTemplate(b){ return `34px ${b.subNameW || 250}px ${b.subColumns.map(c => colW(c) + 'px').join(' ')} 44px`; }
+
+function groupsToShow(b, includeEmpty){
+  if (!ui.groupBy) return b.groups;
+  const col = b.columns.find(c => c.id === ui.groupBy && c.type === 'status');
+  if (!col){ ui.groupBy = null; return b.groups; }
+  const all = b.groups.flatMap(g => g.items);
+  const out = col.options.map(o => ({id:'v-' + o.id, name:o.name, color:o.color, virtual:true, col, optId:o.id, collapsed:!!ui.vcol['v-' + o.id], items:all.filter(i => i.v[col.id] === o.id)}));
+  out.push({id:'v-none', name:'No ' + col.name.toLowerCase(), color:'#808080', virtual:true, col, optId:null, collapsed:!!ui.vcol['v-none'], items:all.filter(i => !optOf(col, i.v[col.id]))});
+  return includeEmpty ? out : out.filter(g => g.items.length && (!ui.search.trim() || visibleItems(g, b).length));
+}
+
+function table(){
+  const b = board();
+  const wrap = h('div', {class:'scroll'});
+  const inner = h('div', {class:'tbl'});
+  const tpl = colTemplate(b);
+  const groups = groupsToShow(b);
+  if (ui.groupBy){
+    const gc = b.columns.find(c => c.id === ui.groupBy);
+    inner.append(h('p', {class:'note', style:{margin:'0 0 12px'}}, 'Grouped by ' + gc.name + '. Drag a row into another group to change its ' + gc.name + '.'));
+  }
+  groups.forEach(g => inner.append(groupEl(b, g, tpl)));
+  if (!ui.groupBy) inner.append(h('button', {class:'btn', onclick:() => ask('New group', 'Group name', '', name => {
+    b.groups.push({id:uid(), name, color:COLORS[b.groups.length % COLORS.length], collapsed:false, items:[]}); save(); renderBody();
+  }, 'Add group')}, '+ Add group'));
+  wrap.append(inner);
+  return wrap;
+}
+
+function groupEl(b, g, tpl){
+  const items = visibleItems(g, b);
+  const cols = vis(b);
+  const el = h('div', {class:'group'});
+  const toggle = () => { if (g.virtual) ui.vcol[g.id] = !ui.vcol[g.id]; else g.collapsed = !g.collapsed; save(); renderBody(); };
+  const head = h('div', {class:'ghead', style:{color:g.color},
+      ondragover:e => { if (ui.drag || ui.dragGroup){ e.preventDefault(); if (ui.dragGroup && !g.virtual) head.classList.add('gover'); } },
+      ondragleave:() => head.classList.remove('gover'),
+      ondrop:e => { e.preventDefault(); head.classList.remove('gover'); if (ui.dragGroup) moveGroup(ui.dragGroup, g); else moveItem(ui.drag, g, null); }},
+    g.virtual ? null : h('span', {class:'ghandle', draggable:'true', title:'Drag to reorder groups',
+      ondragstart:e => { ui.dragGroup = g.id; e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', g.id); try { e.dataTransfer.setDragImage(head, 10, 10); } catch(_){} },
+      ondragend:() => { ui.dragGroup = null; }}, '⋮⋮'),
+    h('button', {class:'icon', title:g.collapsed ? 'Expand group' : 'Collapse group', onclick:toggle}, g.collapsed ? '▸' : '▾'),
+    groupCheck(g),
+    g.virtual
+      ? h('span', {class:'gname', style:{color:g.color, fontWeight:700, fontSize:'16px', padding:'2px 6px'}}, g.name)
+      : h('button', {class:'gname', style:{color:g.color}, title:'Rename group', onclick:() => ask('Rename group', 'Group name', g.name, v => { g.name = v; save(); renderBody(); })}, g.name),
+    h('span', {class:'gcount'}, g.items.length + ' ' + plural(b.itemLabel.toLowerCase(), g.items.length)),
+    g.virtual ? null : h('button', {class:'icon', title:'Group options', onclick:e => popup(e.currentTarget,
+      h('div', {style:{padding:'4px 8px',display:'flex',alignItems:'center',gap:'8px'}}, 'Color', h('input', {type:'color', value:g.color, style:{width:'32px',height:'26px',border:0,padding:0,background:'none'}, onchange:ev => { g.color = ev.target.value; save(); closePop(); renderBody(); }})),
+      b.groups.indexOf(g) > 0 ? menuItem('Move group up', () => { moveGroupBy(g, -1); }) : null,
+      b.groups.indexOf(g) < b.groups.length - 1 ? menuItem('Move group down', () => { moveGroupBy(g, 1); }) : null,
+      menuItem('Delete group', () => confirmBox('Delete "' + g.name + '" and its ' + g.items.length + ' item(s)?', 'Delete group', () => { b.groups = b.groups.filter(x => x !== g); if (!b.groups.length) b.groups.push({id:uid(), name:'Group 1', color:COLORS[3], collapsed:false, items:[]}); save(); renderBody(); }), true)
+    )}, '⋯')
+  );
+  el.append(head);
+  if (g.collapsed) return el;
+
+  el.append(h('div', {class:'row hdr', style:{gridTemplateColumns:tpl}},
+    h('div', {class:'cell sticky0 gbar', style:{background:g.color}}),
+    h('div', {class:'cell stickyc chk', style:{background:'var(--surface2)'}}, groupCheck(g)),
+    h('div', {class:'cell sticky1', style:{background:'var(--surface2)'}}, b.itemLabel, resizer(b, null, 'name')),
+    cols.map(c => colHead(b, c, false)),
+    h('div', {class:'cell hcell', title:'Add column', onclick:() => addColumn(b, false)}, '+')
+  ));
+
+  items.forEach(item => el.append(itemRow(b, g, item, tpl)));
+  if (g.virtual) return el;
+
+  const add = h('input', {type:'text', placeholder:'+ Add ' + b.itemLabel.toLowerCase(), 'data-add':g.id, onkeydown:e => {
+    if (e.key === 'Enter' && e.target.value.trim()){
+      g.items.push({id:uid(), name:e.target.value.trim(), v:{}, subs:[]}); save(); renderBody();
+      const n = document.querySelector('[data-add="' + g.id + '"]'); if (n) n.focus();
+    }
+  }});
+  el.append(h('div', {class:'row addrow', style:{gridTemplateColumns:tpl}},
+    h('div', {class:'cell sticky0 gbar', style:{background:g.color,opacity:.45}}),
+    h('div', {class:'cell stickyc', style:{background:'var(--surface)'}}),
+    h('div', {class:'cell sticky1', style:{background:'var(--surface)'}}, add),
+    cols.map(() => h('div', {class:'cell'})), h('div', {class:'cell'})));
+
+  const sc = cols.find(c => c.type === 'status');
+  if (sc && g.items.length){
+    const counts = (sc.options || []).map(o => ({o, n:g.items.filter(i => i.v[sc.id] === o.id).length}));
+    const none = g.items.filter(i => !optOf(sc, i.v[sc.id])).length;
+    const total = g.items.length;
+    el.append(h('div', {class:'row summary', style:{gridTemplateColumns:tpl}},
+      h('div', {class:'cell sticky0'}), h('div', {class:'cell stickyc', style:{background:'var(--surface)'}}), h('div', {class:'cell sticky1', style:{background:'var(--surface)'}}),
+      cols.map(c => h('div', {class:'cell', style:{padding:'8px'}}, c === sc
+        ? h('div', {class:'sumbar', title:counts.filter(x => x.n).map(x => x.o.name + ': ' + x.n).join(', ')},
+            counts.filter(x => x.n).map(x => h('i', {style:{width:(x.n / total * 100) + '%', background:x.o.color}})),
+            none ? h('i', {style:{width:(none / total * 100) + '%', background:'var(--empty)'}}) : null)
+        : null)),
+      h('div', {class:'cell'})));
+  }
+  return el;
+}
+
+function itemRow(b, g, item, tpl){
+  const subs = subsOf(item);
+  const toggleOpen = () => { item.open = !item.open; save(); renderBody(); };
+  const row = h('div', {class:'row item' + (ui.sel.has(item.id) ? ' sel' : ''), style:{gridTemplateColumns:tpl},
+    ondragover:e => { if (ui.drag){ e.preventDefault(); row.classList.add('dragover'); } },
+    ondragleave:() => row.classList.remove('dragover'),
+    ondrop:e => { e.preventDefault(); row.classList.remove('dragover'); moveItem(ui.drag, g, item); }});
+  const handle = h('div', {class:'handle', draggable:'true', title:'Drag to reorder or move to another group',
+    ondragstart:e => {
+      ui.drag = item.id; e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', item.id);
+      const multi = ui.sel.has(item.id) && ui.sel.size > 1;
+      ui.dragIds = multi ? [...ui.sel] : null;
+      try {
+        if (multi){
+          const chip = h('div', {style:{position:'absolute', top:'-1000px', left:'0', padding:'8px 14px', background:'#2f5bea', color:'#fff', borderRadius:'8px', font:'600 13px system-ui'}}, ui.sel.size + ' rows');
+          document.body.append(chip); e.dataTransfer.setDragImage(chip, 10, 10); setTimeout(() => chip.remove(), 0);
+        } else e.dataTransfer.setDragImage(row, 10, 10);
+      } catch(_){}
+    },
+    ondragend:() => { ui.drag = null; ui.dragIds = null; }}, '⋮⋮');
+  row.append(
+    h('div', {class:'cell sticky0', style:{boxShadow:'inset 6px 0 0 ' + g.color}}, handle),
+    h('div', {class:'cell stickyc chk'}, h('input', {type:'checkbox', checked:ui.sel.has(item.id), 'aria-label':'Select ' + (item.name || b.itemLabel), title:'Shift-click to select a range',
+      onmousedown:e => { if (e.shiftKey) e.preventDefault(); }, onclick:e => onRowCheck(item, e.target.checked, e.shiftKey)})),
+    h('div', {class:'cell sticky1'}, h('div', {class:'name'},
+      h('button', {class:'icon chev', title:(item.open ? 'Hide ' : 'Show ') + plural(b.subLabel.toLowerCase(), 2), 'aria-expanded':item.open ? 'true' : 'false', onclick:toggleOpen}, item.open ? '▾' : '▸'),
+      h('input', {type:'text', value:item.name, 'aria-label':b.itemLabel + ' name', oninput:e => { item.name = e.target.value; save(); }}),
+      subs.length ? h('button', {class:'badge', title:subs.length + ' ' + plural(b.subLabel.toLowerCase(), subs.length), onclick:toggleOpen}, subs.length) : null,
+      updBtn({type:'item', itemId:item.id}, item),
+      h('button', {class:'icon', title:'Open details', onclick:() => openItem(item)}, '⤢'))),
+    ...vis(b).map(c => h('div', {class:'cell' + (c.type === 'checkbox' ? ' center' : ''), style:c.type === 'status' ? {padding:0} : {}}, cellEditor(c, item))),
+    h('div', {class:'cell'}, h('button', {class:'icon del', title:'Delete ' + b.itemLabel.toLowerCase(), onclick:() => deleteItem(g, item)}, '✕'))
+  );
+  return h('div', {class:'iw'}, row, item.open ? subPanel(b, g, item) : null);
+}
+
+function subPanel(b, g, item){
+  const subs = subsOf(item), cols = b.subColumns;
+  const tpl = subTemplate(b);
+  const panel = h('div', {class:'subpanel', style:{borderLeftColor:g.color}});
+  panel.append(h('div', {class:'row hdr', style:{gridTemplateColumns:tpl}},
+    h('div', {class:'cell chk'}, subAllCheck(item)),
+    h('div', {class:'cell rzp'}, b.subLabel, resizer(b, null, 'subname')),
+    cols.map(c => colHead(b, c, true)),
+    h('div', {class:'cell hcell', title:'Add column', onclick:() => addColumn(b, true)}, '+')));
+  subs.forEach(sb => panel.append(h('div', {class:'row item' + (ui.selS.has(sb.id) ? ' sel' : ''), style:{gridTemplateColumns:tpl}},
+    h('div', {class:'cell chk'}, h('input', {type:'checkbox', checked:ui.selS.has(sb.id), 'aria-label':'Select ' + (sb.name || b.subLabel), title:'Shift-click to select a range',
+      onmousedown:e => { if (e.shiftKey) e.preventDefault(); }, onclick:e => onSubCheck(item, sb, e.target.checked, e.shiftKey)})),
+    h('div', {class:'cell'}, h('div', {class:'name'}, h('input', {type:'text', value:sb.name, 'aria-label':b.subLabel + ' name', oninput:e => { sb.name = e.target.value; save(); }}), updBtn({type:'sub', itemId:item.id, subId:sb.id}, sb))),
+    cols.map(c => h('div', {class:'cell' + (c.type === 'checkbox' ? ' center' : ''), style:c.type === 'status' ? {padding:0} : {}}, cellEditor(c, sb))),
+    h('div', {class:'cell'}, h('button', {class:'icon del', title:'Delete ' + b.subLabel.toLowerCase(), onclick:() => {
+      const idx = subs.indexOf(sb); subs.splice(idx, 1); if (ui.panel && ui.panel.subId === sb.id) closePanel(); save(); renderBody();
+      toast('Deleted "' + (sb.name || b.subLabel.toLowerCase()) + '"', () => { subs.splice(idx, 0, sb); save(); renderBody(); });
+    }}, '✕')))));
+  const add = h('input', {type:'text', placeholder:'+ Add ' + b.subLabel.toLowerCase(), 'data-addsub':item.id, onkeydown:e => {
+    if (e.key === 'Enter' && e.target.value.trim()){
+      subs.push({id:uid(), name:e.target.value.trim(), v:{}}); save(); renderBody();
+      const n = document.querySelector('[data-addsub="' + item.id + '"]'); if (n) n.focus();
+    }
+  }});
+  panel.append(h('div', {class:'row addrow', style:{gridTemplateColumns:tpl}}, h('div', {class:'cell'}), h('div', {class:'cell'}, add), cols.map(() => h('div', {class:'cell'})), h('div', {class:'cell'})));
+  return panel;
+}
+
+function moveGroup(id, target){
+  ui.dragGroup = null;
+  const b = board(); const from = b.groups.findIndex(x => x.id === id), to = b.groups.indexOf(target);
+  if (from < 0 || to < 0 || from === to) return;
+  const [grp] = b.groups.splice(from, 1); b.groups.splice(to, 0, grp);
+  save(); renderBody();
+}
+function moveGroupBy(g, d){
+  const b = board(); const i = b.groups.indexOf(g), j = i + d;
+  if (j < 0 || j >= b.groups.length) return;
+  b.groups.splice(i, 1); b.groups.splice(j, 0, g); save(); renderBody();
+}
+function moveItem(id, toGroup, beforeItem){
+  if (!id) return;
+  const ids = ui.dragIds && ui.dragIds.includes(id) ? ui.dragIds : [id];
+  moveItems(ids, toGroup, beforeItem);
+}
+function moveItems(ids, toGroup, beforeItem){
+  ui.drag = null; ui.dragIds = null;
+  const b = board(); const recs = [];
+  b.groups.forEach(g => g.items.forEach(i => { if (ids.includes(i.id)) recs.push(i); }));
+  if (!recs.length) return;
+  if (toGroup.virtual){
+    recs.forEach(i => { if (toGroup.optId) i.v[toGroup.col.id] = toGroup.optId; else delete i.v[toGroup.col.id]; });
+    save(); renderBody(); return;
+  }
+  if (beforeItem && ids.includes(beforeItem.id)) return;
+  b.groups.forEach(g => { g.items = g.items.filter(i => !ids.includes(i.id)); });
+  let idx = beforeItem ? toGroup.items.findIndex(i => i.id === beforeItem.id) : toGroup.items.length;
+  if (idx < 0) idx = toGroup.items.length;
+  toGroup.items.splice(idx, 0, ...recs);
+  save(); renderBody();
+}
+
+/* ---------- selection and bulk actions ---------- */
+function visibleRows(){
+  const b = board(), rows = [];
+  groupsToShow(b).forEach(g => { if (!g.collapsed) visibleItems(g, b).forEach(i => rows.push(i.id)); });
+  return rows;
+}
+function onRowCheck(item, checked, shift){
+  ui.selS.clear();
+  if (shift && ui.anchor){
+    const rows = visibleRows(); const a = rows.indexOf(ui.anchor), z = rows.indexOf(item.id);
+    if (a >= 0 && z >= 0){
+      for (let k = Math.min(a, z); k <= Math.max(a, z); k++){ if (checked) ui.sel.add(rows[k]); else ui.sel.delete(rows[k]); }
+      ui.anchor = item.id; renderBody(); return;
+    }
+  }
+  if (checked) ui.sel.add(item.id); else ui.sel.delete(item.id);
+  ui.anchor = item.id; renderBody();
+}
+function toggleGroupSel(g, shift){
+  ui.selS.clear();
+  const b = board(); const items = visibleItems(g, b);
+  const want = !(items.length && items.every(i => ui.sel.has(i.id)));
+  let groups = [g];
+  if (shift && ui.anchorG){
+    const list = groupsToShow(b); const a = list.findIndex(x => x.id === ui.anchorG), z = list.findIndex(x => x.id === g.id);
+    if (a >= 0 && z >= 0) groups = list.slice(Math.min(a, z), Math.max(a, z) + 1);
+  }
+  groups.forEach(x => visibleItems(x, b).forEach(i => { if (want) ui.sel.add(i.id); else ui.sel.delete(i.id); }));
+  ui.anchorG = g.id; renderBody();
+}
+function groupCheck(g){
+  const items = visibleItems(g, board()); const n = items.filter(i => ui.sel.has(i.id)).length;
+  const cb = h('input', {type:'checkbox', class:'gck', title:'Select all in this group. Shift-click to select a range of groups.', 'aria-label':'Select all in ' + g.name,
+    checked:items.length > 0 && n === items.length, disabled:!items.length,
+    onmousedown:e => { if (e.shiftKey) e.preventDefault(); }, onclick:e => toggleGroupSel(g, e.shiftKey)});
+  cb.indeterminate = n > 0 && n < items.length;
+  return cb;
+}
+function selectedIds(){ const out = []; board().groups.forEach(g => g.items.forEach(i => { if (ui.sel.has(i.id)) out.push(i.id); })); return out; }
+function clearSel(){ ui.sel.clear(); ui.selS.clear(); ui.anchor = null; ui.anchorG = null; ui.anchorS = null; renderBody(); }
+function onSubCheck(item, sb, checked, shift){
+  ui.sel.clear();
+  const subs = subsOf(item);
+  if (shift && ui.anchorS && subs.some(x => x.id === ui.anchorS)){
+    const a = subs.findIndex(x => x.id === ui.anchorS), z = subs.indexOf(sb);
+    for (let k = Math.min(a, z); k <= Math.max(a, z); k++){ if (checked) ui.selS.add(subs[k].id); else ui.selS.delete(subs[k].id); }
+  } else { if (checked) ui.selS.add(sb.id); else ui.selS.delete(sb.id); }
+  ui.anchorS = sb.id; renderBody();
+}
+function subAllCheck(item){
+  const subs = subsOf(item); const n = subs.filter(x => ui.selS.has(x.id)).length;
+  const cb = h('input', {type:'checkbox', title:'Select all contacts in this company', 'aria-label':'Select all contacts in ' + (item.name || 'this company'),
+    checked:subs.length > 0 && n === subs.length, disabled:!subs.length,
+    onclick:() => { ui.sel.clear(); const all = subs.length && n === subs.length; subs.forEach(x => { if (all) ui.selS.delete(x.id); else ui.selS.add(x.id); }); renderBody(); }});
+  cb.indeterminate = n > 0 && n < subs.length; return cb;
+}
+function moveContacts(ids, target){
+  const b = board(); const moving = [];
+  b.groups.forEach(g => g.items.forEach(i => { subsOf(i).forEach(sb => { if (ids.includes(sb.id)) moving.push(sb); }); }));
+  if (!moving.length) return;
+  b.groups.forEach(g => g.items.forEach(i => { i.subs = subsOf(i).filter(sb => !ids.includes(sb.id)); }));
+  if (ui.panel && ids.includes(ui.panel.subId)) closePanel();
+  subsOf(target).push(...moving); target.open = true;
+  ui.selS.clear(); save(); renderBody(); afterUpdChange();
+  toast('Moved ' + moving.length + (moving.length === 1 ? ' contact' : ' contacts') + ' to "' + (target.name || 'company') + '"');
+}
+function bulkMoveContacts(){
+  const b = board(); const ids = [...ui.selS]; if (!ids.length) return;
+  const q = h('input', {type:'text', placeholder:'Search companies', 'aria-label':'Search companies'});
+  const list = h('div', {style:{maxHeight:'50vh', overflow:'auto', display:'flex', flexDirection:'column', gap:'2px', marginTop:'10px'}});
+  let close;
+  const draw = () => {
+    const t = q.value.trim().toLowerCase(); const rows = [];
+    b.groups.forEach(g => g.items.forEach(i => { if (!t || (i.name || '').toLowerCase().includes(t)) rows.push([g, i]); }));
+    list.replaceChildren(...rows.slice(0, 200).map(([g, i]) => h('button', {class:'btn ghost', style:{display:'flex', gap:'8px', alignItems:'center'}, onclick:() => { moveContacts(ids, i); close(); }},
+      h('span', {class:'dot', style:{background:g.color, flex:'none'}}), i.name || 'Untitled', h('span', {class:'note', style:{marginLeft:'auto'}}, g.name))),
+      ...(rows.length > 200 ? [h('div', {class:'note'}, 'Showing the first 200. Type to narrow the list.')] : []),
+      ...(!rows.length ? [h('div', {class:'note'}, 'No matching companies.')] : []));
+  };
+  q.addEventListener('input', draw); draw();
+  close = modal('Move ' + ids.length + (ids.length === 1 ? ' contact' : ' contacts') + ' to…', h('div', {}, q, list), [{label:'Cancel'}]);
+}
+function bulkDeleteContacts(){
+  const b = board(); const ids = [...ui.selS]; if (!ids.length) return;
+  confirmBox('Delete ' + ids.length + ' selected ' + plural(b.subLabel.toLowerCase(), ids.length) + '?', 'Delete ' + ids.length, () => {
+    const removed = [];
+    b.groups.forEach(g => g.items.forEach(i => { const subs = subsOf(i); subs.forEach((sb, idx) => { if (ids.includes(sb.id)) removed.push({i, idx, sb}); }); i.subs = subs.filter(sb => !ids.includes(sb.id)); }));
+    if (ui.panel && ids.includes(ui.panel.subId)) closePanel();
+    ui.selS.clear(); save(); renderBody(); afterUpdChange();
+    toast('Deleted ' + removed.length, () => { removed.forEach(r => subsOf(r.i).splice(r.idx, 0, r.sb)); save(); renderBody(); afterUpdChange(); });
+  });
+}
+function bulkMoveMenu(anchor){
+  const b = board(); const ids = selectedIds(); if (!ids.length) return;
+  const targets = groupsToShow(b, true);
+  const done = (g, label) => { moveItems(ids, g, null); ui.sel.clear(); renderBody(); toast('Moved ' + ids.length + ' to "' + label + '"'); };
+  popup(anchor,
+    targets.map(g => h('button', {class:'mi', onclick:() => { closePop(); done(g, g.name); }}, h('span', {class:'dot', style:{background:g.color}}), g.name + ' (' + g.items.length + ')')),
+    ui.groupBy ? null : h('hr'),
+    ui.groupBy ? null : menuItem('+ New group…', () => ask('New group', 'Group name', '', name => {
+      const g = {id:uid(), name, color:COLORS[b.groups.length % COLORS.length], collapsed:false, items:[]};
+      b.groups.push(g); done(g, name);
+    }, 'Create and move')));
+}
+function bulkDuplicate(){
+  const b = board(); let n = 0;
+  b.groups.forEach(g => {
+    const out = [];
+    g.items.forEach(i => {
+      out.push(i);
+      if (ui.sel.has(i.id)){
+        const c = JSON.parse(JSON.stringify(i)); c.id = uid(); c.name = (i.name || '') + ' (copy)';
+        (c.subs || []).forEach(sb => { sb.id = uid(); });
+        (c.updates || []).forEach(u => { u.id = uid(); (u.replies || []).forEach(r => { r.id = uid(); }); });
+        out.push(c); n++;
+      }
+    });
+    g.items = out;
+  });
+  ui.sel.clear(); save(); renderBody(); toast('Duplicated ' + n + (n === 1 ? ' row' : ' rows'));
+}
+function bulkDelete(){
+  const b = board(); const ids = selectedIds(); if (!ids.length) return;
+  confirmBox('Delete ' + ids.length + ' selected ' + plural(b.itemLabel.toLowerCase(), ids.length) + ' and their ' + plural(b.subLabel.toLowerCase(), 2) + '?', 'Delete ' + ids.length, () => {
+    const removed = [];
+    b.groups.forEach(g => { g.items.forEach((i, idx) => { if (ids.includes(i.id)) removed.push({g, idx, i}); }); g.items = g.items.filter(i => !ids.includes(i.id)); });
+    if (ui.panel && ids.includes(ui.panel.itemId)) closePanel();
+    ui.sel.clear(); save(); renderBody();
+    toast('Deleted ' + removed.length, () => { removed.forEach(r => r.g.items.splice(r.idx, 0, r.i)); save(); renderBody(); });
+  });
+}
+function renderBulk(){
+  const b = board(); const exist = new Set(), existS = new Set();
+  b.groups.forEach(g => g.items.forEach(i => { exist.add(i.id); subsOf(i).forEach(sb => existS.add(sb.id)); }));
+  [...ui.sel].forEach(id => { if (!exist.has(id)) ui.sel.delete(id); });
+  [...ui.selS].forEach(id => { if (!existS.has(id)) ui.selS.delete(id); });
+  const old = $('#bulkbar'); if (old) old.remove();
+  if (ui.selS.size){
+    const n = ui.selS.size;
+    document.body.append(h('div', {class:'bulkbar', id:'bulkbar', role:'toolbar', 'aria-label':'Selected contacts'},
+      h('span', {class:'bcount'}, n), h('span', {style:{marginRight:'8px'}}, n === 1 ? b.subLabel.toLowerCase() + ' selected' : plural(b.subLabel.toLowerCase(), 2) + ' selected'),
+      h('button', {onclick:bulkMoveContacts}, 'Move to ' + b.itemLabel.toLowerCase() + '…'),
+      h('button', {class:'bdanger', onclick:bulkDeleteContacts}, 'Delete'),
+      h('button', {title:'Clear selection (Esc)', onclick:clearSel}, '✕ Clear')));
+    return;
+  }
+  const n = ui.sel.size; if (!n) return;
+  document.body.append(h('div', {class:'bulkbar', id:'bulkbar', role:'toolbar', 'aria-label':'Selected rows'},
+    h('span', {class:'bcount'}, n), h('span', {style:{marginRight:'8px'}}, n === 1 ? b.itemLabel.toLowerCase() + ' selected' : plural(b.itemLabel.toLowerCase(), 2) + ' selected'),
+    h('button', {onclick:e => bulkMoveMenu(e.currentTarget)}, 'Move to…'),
+    h('button', {onclick:bulkDuplicate}, 'Duplicate'),
+    h('button', {class:'bdanger', onclick:bulkDelete}, 'Delete'),
+    h('button', {title:'Clear selection (Esc)', onclick:clearSel}, '✕ Clear')));
+}
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && (ui.sel.size || ui.selS.size) && !ui.pop && !document.querySelector('.overlay') && !/INPUT|TEXTAREA|SELECT/.test((document.activeElement || {}).tagName || '')) clearSel();
+});
+
+function deleteItem(g, item){
+  if (ui.panel && ui.panel.itemId === item.id) closePanel();
+  const f = findItem(item.id); const grp = f ? f.group : g;
+  const idx = grp.items.indexOf(item);
+  grp.items.splice(idx, 1); save(); renderBody();
+  toast('Deleted "' + (item.name || 'item') + '"', () => { grp.items.splice(idx, 0, item); save(); renderBody(); });
+}
+
+/* ---------- columns ---------- */
+function applyWidths(){
+  const b = board(); const mt = colTemplate(b), st = subTemplate(b);
+  document.querySelectorAll('.tbl .row').forEach(r => { r.style.gridTemplateColumns = r.closest('.subpanel') ? st : mt; });
+}
+function resizer(b, col, kind){
+  return h('div', {class:'rz', title:'Drag to resize. Double-click to reset.',
+    onclick:e => e.stopPropagation(),
+    ondblclick:e => { e.stopPropagation(); if (kind === 'name') delete b.nameW; else if (kind === 'subname') delete b.subNameW; else delete col.w; applyWidths(); save(); },
+    onmousedown:e => {
+      e.preventDefault(); e.stopPropagation(); hideTip();
+      const startX = e.clientX, handle = e.currentTarget;
+      const start = kind === 'name' ? (b.nameW || 300) : kind === 'subname' ? (b.subNameW || 250) : colW(col);
+      handle.classList.add('on'); document.body.style.cursor = 'col-resize'; document.body.style.userSelect = 'none';
+      let raf = 0;
+      const move = ev => {
+        const w = Math.max(60, Math.min(900, Math.round(start + ev.clientX - startX)));
+        if (kind === 'name') b.nameW = w; else if (kind === 'subname') b.subNameW = w; else col.w = w;
+        if (!raf) raf = requestAnimationFrame(() => { raf = 0; applyWidths(); });
+      };
+      const up = () => {
+        document.removeEventListener('mousemove', move); document.removeEventListener('mouseup', up);
+        handle.classList.remove('on'); document.body.style.cursor = ''; document.body.style.userSelect = '';
+        applyWidths(); save();
+      };
+      document.addEventListener('mousemove', move); document.addEventListener('mouseup', up);
+    }});
+}
+function colHead(b, c, isSub){
+  const cell = h('div', {class:'cell hcell', draggable:'true', title:'Click for options. Drag to reorder.',
+    onclick:e => colMenu(e.currentTarget, b, c, isSub),
+    ondragstart:e => { ui.dragCol = {id:c.id, sub:isSub}; e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', c.id); },
+    ondragend:() => { ui.dragCol = null; },
+    ondragover:e => { if (ui.dragCol && ui.dragCol.sub === isSub){ e.preventDefault(); cell.classList.add('colover'); } },
+    ondragleave:() => cell.classList.remove('colover'),
+    ondrop:e => { e.preventDefault(); cell.classList.remove('colover'); moveColumn(b, isSub, ui.dragCol && ui.dragCol.id, c.id); }},
+    c.name + (c.rollup ? ' ∑' : ''), !isSub && ui.sort && ui.sort.col === c.id ? (ui.sort.dir === 1 ? ' ↑' : ' ↓') : '', resizer(b, c, isSub ? 'sub' : 'col'));
+  return cell;
+}
+function moveColumn(b, isSub, fromId, toId){
+  ui.dragCol = null; if (!fromId || fromId === toId) return;
+  const list = isSub ? b.subColumns : b.columns;
+  const from = list.findIndex(c => c.id === fromId), to = list.findIndex(c => c.id === toId);
+  if (from < 0 || to < 0) return;
+  const [col] = list.splice(from, 1); list.splice(to, 0, col);
+  save(); renderBody();
+}
+function moveColumnBy(b, isSub, c, d){
+  const list = isSub ? b.subColumns : b.columns;
+  const i = list.indexOf(c); let j = i + d;
+  while (j >= 0 && j < list.length && list[j].hidden) j += d;
+  if (j < 0 || j >= list.length) return;
+  list.splice(i, 1); list.splice(j, 0, c); save(); renderBody();
+}
+function colMenu(anchor, b, c, isSub){
+  const list = isSub ? b.subColumns : b.columns;
+  popup(anchor,
+    menuItem('Rename', () => ask('Rename column', 'Column name', c.name, v => { c.name = v; save(); renderBody(); })),
+    isSub ? null : menuItem('Sort ascending', () => { ui.sort = {col:c.id, dir:1}; renderBody(); }),
+    isSub ? null : menuItem('Sort descending', () => { ui.sort = {col:c.id, dir:-1}; renderBody(); }),
+    !isSub && ui.sort ? menuItem('Clear sort', () => { ui.sort = null; renderBody(); }) : null,
+    c.type === 'status' ? menuItem('Edit labels', () => editLabels(c)) : null,
+    !isSub && c.type === 'date' ? menuItem(c.rollup ? 'Change roll-up…' : 'Roll up from contacts…', () => rollupDialog(b, c)) : null,
+    !isSub && c.rollup ? menuItem('Stop rolling up', () => { delete c.rollup; save(); renderBody(); }) : null,
+    menuItem('Move left', () => moveColumnBy(b, isSub, c, -1)),
+    menuItem('Move right', () => moveColumnBy(b, isSub, c, 1)),
+    isSub ? null : menuItem('Hide column', () => { c.hidden = true; save(); render(); }),
+    h('hr'),
+    menuItem('Delete column', () => confirmBox('Delete the "' + c.name + '" column and its data?', 'Delete column', () => {
+      list.splice(list.indexOf(c), 1);
+      b.groups.forEach(g => g.items.forEach(i => { if (isSub) subsOf(i).forEach(sb => delete sb.v[c.id]); else delete i.v[c.id]; }));
+      if (ui.sort && ui.sort.col === c.id) ui.sort = null;
+      if (ui.groupBy === c.id) ui.groupBy = null;
+      save(); render();
+    }), true)
+  );
+}
+function addColumn(b, isSub){
+  const name = h('input', {type:'text', placeholder:'e.g. Phone'});
+  const type = h('select', {}, Object.entries(TYPES).map(([k, v]) => h('option', {value:k}, v)));
+  modal('Add column', h('div', {}, h('label', {}, 'Name'), name, h('label', {}, 'Type'), type), [
+    {label:'Cancel'},
+    {label:'Add column', primary:true, fn:() => {
+      const n = name.value.trim(); if (!n) return false;
+      const col = {id:uid(), name:n, type:type.value};
+      if (col.type === 'status') col.options = opts([['Done','#00c875'],['Working on it','#fdab3d'],['Stuck','#df2f4a']]);
+      (isSub ? b.subColumns : b.columns).push(col); save(); renderBody();
+    }}
+  ]);
+}
+function groupByMenu(anchor){
+  const b = board(); const sc = b.columns.filter(c => c.type === 'status');
+  popup(anchor,
+    menuItem('None (use my groups)', () => { ui.groupBy = null; render(); }),
+    sc.length ? h('hr') : h('div', {class:'note', style:{padding:'6px 8px'}}, 'Add a Status column to group by it.'),
+    sc.map(c => menuItem('Group by ' + c.name, () => { ui.groupBy = c.id; render(); })));
+}
+function hideMenu(anchor){
+  const b = board();
+  popup(anchor, h('div', {style:{padding:'4px 8px',display:'flex',flexDirection:'column',gap:'8px'}},
+    b.columns.map(c => h('label', {style:{display:'flex',gap:'8px',alignItems:'center',cursor:'pointer'}},
+      h('input', {type:'checkbox', checked:!c.hidden, onchange:e => { c.hidden = !e.target.checked; save(); renderBody(); }}), c.name))));
+}
+function editLabels(col){
+  const list = col.options.map(o => ({...o}));
+  const box = h('div');
+  const draw = () => {
+    box.replaceChildren(...list.map((o, i) => h('div', {class:'lblrow'},
+      h('input', {type:'color', value:o.color, 'aria-label':'Label color', oninput:e => { o.color = e.target.value; }}),
+      h('input', {type:'text', value:o.name, 'aria-label':'Label name', oninput:e => { o.name = e.target.value; }}),
+      h('button', {class:'icon', title:'Remove label', onclick:() => { list.splice(i, 1); draw(); }}, '✕'))),
+      h('button', {class:'btn', onclick:() => { list.push({id:uid(), name:'New label', color:COLORS[list.length % COLORS.length]}); draw(); }}, '+ Add label'));
+  };
+  draw();
+  modal('Edit labels: ' + col.name, box, [{label:'Cancel'}, {label:'Save labels', primary:true, fn:() => {
+    col.options = list.filter(o => o.name.trim());
+    const clean = rec => { if (rec.v[col.id] && !optOf(col, rec.v[col.id])) delete rec.v[col.id]; };
+    board().groups.forEach(g => g.items.forEach(i => { clean(i); subsOf(i).forEach(clean); }));
+    refresh();
+  }}]);
+}
+
+/* ---------- item detail dialog ---------- */
+function openItem(item){
+  const b = board();
+  const fields = h('div');
+  const fill = () => {
+    fields.replaceChildren(
+      h('label', {}, 'Item'),
+      h('input', {type:'text', value:item.name, oninput:e => { item.name = e.target.value; save(); }}),
+      b.columns.map(c => h('div', {class:'field'}, h('label', {}, c.name), cellEditor(c, item)))
+    );
+  };
+  fill(); ui.onRefresh = fill;
+  const g = findItem(item.id).group;
+  modal('Item details', fields, [
+    {label:'Delete', danger:true, fn:() => { deleteItem(g, item); }},
+    {label:'Done', primary:true, fn:() => { }}
+  ], () => { ui.onRefresh = null; renderBody(); });
+}
+
+/* ---------- kanban view ---------- */
+function kanban(){
+  const b = board();
+  const scs = b.columns.filter(c => c.type === 'status');
+  const wrap = h('div', {class:'scroll'});
+  if (!scs.length){ wrap.append(h('div', {class:'emptymsg'}, 'Kanban groups cards by a Status column. Add a Status column in Table view to use it.')); return wrap; }
+  const col = scs.find(c => c.id === ui.kcol) || scs[0];
+  const picker = h('select', {'aria-label':'Group cards by', onchange:e => { ui.kcol = e.target.value; renderBody(); }},
+    scs.map(c => h('option', {value:c.id, selected:c.id === col.id}, c.name)));
+  const all = b.groups.flatMap(g => g.items).filter(i => matches(i, b));
+  const lanes = h('div', {class:'lanes'});
+  [...col.options, null].forEach(o => {
+    const here = all.filter(i => o ? i.v[col.id] === o.id : !optOf(col, i.v[col.id]));
+    const lane = h('div', {class:'lane',
+      ondragover:e => { if (ui.drag){ e.preventDefault(); lane.classList.add('over'); } },
+      ondragleave:() => lane.classList.remove('over'),
+      ondrop:e => { e.preventDefault(); lane.classList.remove('over'); const f = findItem(ui.drag); ui.drag = null; if (f){ if (o) f.item.v[col.id] = o.id; else delete f.item.v[col.id]; save(); renderBody(); } }},
+      h('div', {class:'lhead', style:{background:o ? o.color : 'var(--empty)'}}, h('span', {}, o ? o.name : 'No status'), h('span', {}, here.length)),
+      here.map(item => {
+        const meta = b.columns.filter(c => c.type !== 'status' && c.type !== 'checkbox' && effVal(c, item)).slice(0, 3).map(c => c.name + ': ' + effVal(c, item));
+        return h('div', {class:'card', draggable:'true',
+          ondragstart:e => { ui.drag = item.id; ui.dragIds = null; e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', item.id); },
+          ondragend:() => { ui.drag = null; ui.dragIds = null; }, onclick:() => openItem(item)},
+          h('b', {}, item.name || 'Untitled'), meta.map(m => h('div', {class:'meta'}, m)));
+      }));
+    lanes.append(lane);
+  });
+  const box = h('div', {style:{display:'flex',flexDirection:'column',minHeight:0,flex:1}},
+    h('div', {class:'kbar'}, 'Group cards by', picker), wrap);
+  wrap.append(lanes);
+  return box;
+}
+
+/* ---------- import / export ---------- */
+function download(name, text, type){
+  const a = h('a', {href:URL.createObjectURL(new Blob([text], {type})), download:name});
+  document.body.append(a); a.click(); a.remove();
+}
+function pickFile(accept, cb){
+  const i = h('input', {type:'file', accept});
+  i.onchange = () => { const f = i.files[0]; if (!f) return; const r = new FileReader(); r.onload = () => cb(r.result, f.name); r.readAsText(f); };
+  i.click();
+}
+function csvEscape(s){ s = String(s ?? ''); return /[",\n\r]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; }
+function fmtCell(c, v){
+  if (c.type === 'status'){ const o = optOf(c, v); return o ? o.name : ''; }
+  if (c.type === 'checkbox') return v ? 'TRUE' : '';
+  return v ?? '';
+}
+function exportCSV(){
+  const b = board();
+  const rows = [['Group', b.itemLabel, ...b.columns.map(c => c.name)]];
+  b.groups.forEach(g => g.items.forEach(i => rows.push([g.name, i.name, ...b.columns.map(c => fmtCell(c, effVal(c, i)))])));
+  download(b.name.replace(/[^\w\- ]+/g, '') + ' ' + plural(b.itemLabel, 2) + '.csv', rows.map(r => r.map(csvEscape).join(',')).join('\r\n'), 'text/csv');
+}
+function exportSubCSV(){
+  const b = board();
+  const rows = [['Group', b.itemLabel, b.subLabel, ...b.subColumns.map(c => c.name)]];
+  b.groups.forEach(g => g.items.forEach(i => subsOf(i).forEach(sb => rows.push([g.name, i.name, sb.name, ...b.subColumns.map(c => fmtCell(c, sb.v[c.id]))]))));
+  download(b.name.replace(/[^\w\- ]+/g, '') + ' ' + plural(b.subLabel, 2) + '.csv', rows.map(r => r.map(csvEscape).join(',')).join('\r\n'), 'text/csv');
+}
+function parseCSV(t){
+  const rows = []; let row = [], cur = '', q = false;
+  t = t.replace(/^\uFEFF/, '');
+  for (let i = 0; i < t.length; i++){
+    const ch = t[i];
+    if (q){ if (ch === '"'){ if (t[i+1] === '"'){ cur += '"'; i++; } else q = false; } else cur += ch; }
+    else if (ch === '"') q = true;
+    else if (ch === ','){ row.push(cur); cur = ''; }
+    else if (ch === '\n' || ch === '\r'){ if (ch === '\r' && t[i+1] === '\n') i++; row.push(cur); rows.push(row); row = []; cur = ''; }
+    else cur += ch;
+  }
+  if (cur !== '' || row.length){ row.push(cur); rows.push(row); }
+  return rows.filter(r => r.some(x => x.trim() !== ''));
+}
+function normDate(s){
+  s = s.trim(); if (!s) return '';
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+  const d = new Date(s); if (isNaN(d)) return '';
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+}
+function setFromText(col, rec, raw){
+  if (!raw) return;
+  if (col.type === 'status'){
+    let o = col.options.find(x => x.name.toLowerCase() === raw.toLowerCase());
+    if (!o){ o = {id:uid(), name:raw, color:COLORS[col.options.length % COLORS.length]}; col.options.push(o); }
+    rec.v[col.id] = o.id;
+  } else if (col.type === 'date'){ const d = normDate(raw); if (d) rec.v[col.id] = d; }
+  else if (col.type === 'checkbox') rec.v[col.id] = /^(true|yes|1|x)$/i.test(raw);
+  else if (col.type === 'number') rec.v[col.id] = raw.replace(/[^0-9.\-]/g, '');
+  else rec.v[col.id] = raw;
+}
+function importCSV(text){
+  const b = board(); const rows = parseCSV(text);
+  if (rows.length < 2){ toast('That file has no data rows.'); return; }
+  const head = rows[0].map(x => x.trim());
+  const lower = head.map(x => x.toLowerCase());
+  const gi = lower.indexOf('group');
+  const si = lower.findIndex(x => ['subitem', b.subLabel.toLowerCase(), 'contact'].includes(x));
+  let ni = lower.findIndex(x => ['item', b.itemLabel.toLowerCase(), 'name', 'company', 'task'].includes(x));
+  if (ni < 0) ni = lower.findIndex((x, i) => i !== gi && i !== si);
+  if (ni < 0){ toast('Could not find a name column in that file.'); return; }
+  const target = si >= 0 ? b.subColumns : b.columns;
+  const map = {};
+  head.forEach((name, idx) => {
+    if (!name || idx === gi || idx === ni || idx === si) return;
+    let col = target.find(c => c.name.toLowerCase() === name.toLowerCase());
+    if (!col){ col = {id:uid(), name, type:'text'}; target.push(col); }
+    map[idx] = col;
+  });
+  const groupFor = r => {
+    const gname = gi >= 0 && r[gi] && r[gi].trim() ? r[gi].trim() : 'Imported';
+    let g = b.groups.find(x => x.name.toLowerCase() === gname.toLowerCase());
+    if (!g){ g = {id:uid(), name:gname, color:COLORS[b.groups.length % COLORS.length], collapsed:false, items:[]}; b.groups.push(g); }
+    return g;
+  };
+  let added = 0;
+  rows.slice(1).forEach(r => {
+    const iname = (r[ni] || '').trim();
+    if (si >= 0){
+      const sname = (r[si] || '').trim(); if (!iname || !sname) return;
+      let parent = null;
+      for (const g of b.groups){ parent = g.items.find(i => i.name.toLowerCase() === iname.toLowerCase()); if (parent) break; }
+      if (!parent){ parent = {id:uid(), name:iname, v:{}, subs:[]}; groupFor(r).items.push(parent); }
+      const rec = {id:uid(), name:sname, v:{}};
+      Object.entries(map).forEach(([idx, col]) => setFromText(col, rec, (r[idx] || '').trim()));
+      subsOf(parent).push(rec); added++;
+    } else {
+      const rec = {id:uid(), name:iname, v:{}, subs:[]};
+      Object.entries(map).forEach(([idx, col]) => setFromText(col, rec, (r[idx] || '').trim()));
+      groupFor(r).items.push(rec); added++;
+    }
+  });
+  save(); render(); toast('Imported ' + added + (si >= 0 ? ' ' + b.subLabel.toLowerCase() + ' rows.' : ' ' + b.itemLabel.toLowerCase() + ' rows.'));
+}
+function backupJSON(){ download('prospect-board-backup-' + todayISO() + '.json', JSON.stringify(S, null, 2), 'application/json'); }
+function restoreJSON(text){
+  try {
+    const d = JSON.parse(text);
+    if (!d.boards || !d.boards.length) throw new Error('bad');
+    confirmBox('Replace everything in this app with the backup? This cannot be undone.', 'Restore backup', () => { S = normalize(d); ui.sort = null; ui.groupBy = null; save(); render(); });
+  } catch(e){ toast('That file is not a valid Prospect Board backup.'); }
+}
+
+/* ---------- boards ---------- */
+function newBoard(){
+  const name = h('input', {type:'text', placeholder:'Board name'});
+  const tpl = h('select', {}, h('option', {value:'pro'}, 'Prospecting board: companies with contacts (sample rows)'), h('option', {value:'blank'}, 'Blank board'));
+  modal('New board', h('div', {}, h('label', {}, 'Name'), name, h('label', {}, 'Start from'), tpl), [
+    {label:'Cancel'},
+    {label:'Create board', primary:true, fn:() => {
+      const n = name.value.trim(); if (!n) return false;
+      const b = tpl.value === 'pro' ? prospectingBoard() : blankBoard(n);
+      b.name = n; S.boards.push(b); S.active = b.id; ui.sort = null; ui.groupBy = null; ui.sel.clear(); ui.selS.clear(); save(); render();
+    }}
+  ]);
+}
+function boardMenu(anchor){
+  const b = board();
+  popup(anchor,
+    menuItem('Rename board', () => ask('Rename board', 'Board name', b.name, v => { b.name = v; save(); render(); })),
+    menuItem('Rename item / subitem labels', () => {
+      const a = h('input', {type:'text', value:b.itemLabel}), z = h('input', {type:'text', value:b.subLabel});
+      modal('Item and subitem names', h('div', {}, h('label', {}, 'Top-level rows are called'), a, h('label', {}, 'Rows nested under them are called'), z), [
+        {label:'Cancel'}, {label:'Save', primary:true, fn:() => { if (!a.value.trim() || !z.value.trim()) return false; b.itemLabel = a.value.trim(); b.subLabel = z.value.trim(); save(); render(); }}]);
+    }),
+    S.boards.indexOf(b) > 0 ? menuItem('Move board up', () => moveBoardBy(-1)) : null,
+    S.boards.indexOf(b) < S.boards.length - 1 ? menuItem('Move board down', () => moveBoardBy(1)) : null,
+    menuItem('Duplicate board', () => { const c = JSON.parse(JSON.stringify(b)); c.id = uid(); c.name = b.name + ' copy'; S.boards.push(c); S.active = c.id; save(); render(); }),
+    menuItem('Delete board', () => confirmBox('Delete the board "' + b.name + '" and everything in it?', 'Delete board', () => {
+      S.boards = S.boards.filter(x => x !== b); if (!S.boards.length) S.boards.push(blankBoard('My board')); S.active = S.boards[0].id; save(); render();
+    }), true)
+  );
+}
+function dataMenu(anchor){
+  popup(anchor,
+    menuItem('Export ' + plural(board().itemLabel.toLowerCase(), 2) + ' (CSV)', exportCSV),
+    menuItem('Export ' + plural(board().subLabel.toLowerCase(), 2) + ' (CSV)', exportSubCSV),
+    menuItem('Import CSV (' + plural(board().itemLabel.toLowerCase(), 2) + ' or ' + plural(board().subLabel.toLowerCase(), 2) + ')', () => pickFile('.csv,text/csv', importCSV)),
+    menuItem('Automatic backup to a folder…', openBackupModal),
+    menuItem('Export updates (CSV)', exportUpdatesCSV),
+    menuItem('Set my name for updates', () => ask('Your name', 'Shown on the updates you post', S.author || '', v => { S.author = v; save(); buildPanel(); })),
+    h('hr'),
+    menuItem('Back up everything (JSON)', backupJSON),
+    menuItem('Restore from backup', () => pickFile('.json,application/json', restoreJSON))
+  );
+}
+
+/* ---------- layout ---------- */
+const ICON_SIDE = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M9 4v16"/></svg>';
+const ICON_MOON = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>';
+const ICON_SUN = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>';
+function iconBtn(svg, title, fn, id){
+  const b = h('button', {class:'btn iconbtn', id, title, 'aria-label':title, onclick:fn}); b.innerHTML = svg; return b;
+}
+const prefs = () => S.prefs || (S.prefs = {});
+const effectiveDark = () => prefs().theme ? prefs().theme === 'dark' : !!(window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches);
+function applyTheme(){
+  const t = prefs().theme, root = document.documentElement; if (!root) return;
+  if (t) root.setAttribute('data-theme', t); else root.removeAttribute('data-theme');
+}
+function toggleTheme(){
+  prefs().theme = effectiveDark() ? 'light' : 'dark'; applyTheme(); save();
+  const bt = $('#themebtn'); if (bt){ bt.innerHTML = effectiveDark() ? ICON_SUN : ICON_MOON; const t = effectiveDark() ? 'Switch to light mode' : 'Switch to night mode'; bt.setAttribute('title', t); bt.setAttribute('aria-label', t); }
+}
+function toggleSidebar(){
+  prefs().sideHidden = !prefs().sideHidden;
+  const sd = $('.side'); if (sd) sd.classList.toggle('hidden', !!prefs().sideHidden);
+  const bt = $('#sidebtn'); if (bt){ const t = prefs().sideHidden ? 'Show sidebar' : 'Hide sidebar'; bt.setAttribute('title', t); bt.setAttribute('aria-label', t); bt.setAttribute('aria-pressed', prefs().sideHidden ? 'true' : 'false'); }
+  save();
+}
+function moveBoard(fromId, toId){
+  ui.dragBoard = null;
+  const from = S.boards.findIndex(x => x.id === fromId), to = S.boards.findIndex(x => x.id === toId);
+  if (from < 0 || to < 0 || from === to) return;
+  const [bd] = S.boards.splice(from, 1); S.boards.splice(to, 0, bd); save(); render();
+}
+function moveBoardBy(d){
+  const b = board(), i = S.boards.indexOf(b), j = i + d;
+  if (j < 0 || j >= S.boards.length) return;
+  S.boards.splice(i, 1); S.boards.splice(j, 0, b); save(); render();
+}
+function sidebar(){
+  return h('aside', {class:'side' + (prefs().sideHidden ? ' hidden' : '')},
+    h('div', {class:'brand'}, 'Prospect Board', h('small', {}, 'Your pipeline, no subscription')),
+    h('nav', {class:'boards', 'aria-label':'Boards'}, S.boards.map(b => {
+      const el = h('button', {class:'bitem' + (b.id === S.active ? ' on' : ''), draggable:'true', title:'Drag to reorder',
+        onclick:() => { S.active = b.id; ui.sort = null; ui.search = ''; ui.groupBy = null; ui.sel.clear(); ui.selS.clear(); closePanel(); save(); render(); },
+        ondragstart:e => { ui.dragBoard = b.id; e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', b.id); },
+        ondragend:() => { ui.dragBoard = null; },
+        ondragover:e => { if (ui.dragBoard){ e.preventDefault(); el.classList.add('bover'); } },
+        ondragleave:() => el.classList.remove('bover'),
+        ondrop:e => { e.preventDefault(); el.classList.remove('bover'); moveBoard(ui.dragBoard, b.id); }},
+        h('span', {class:'dot'}), h('span', {class:'t'}, b.name));
+      return el;
+    })),
+    h('div', {class:'side-foot'},
+      h('button', {class:'btn', onclick:newBoard}, '+ New board'),
+      h('button', {class:'btn ghost', onclick:e => dataMenu(e.currentTarget)}, 'Data: export, import, back up'),
+      h('div', {class:'note', id:'storenote'}))
+  );
+}
+function mainEl(){
+  const b = board();
+  const search = h('input', {class:'search', type:'search', placeholder:'Search items', 'aria-label':'Search items', value:ui.search, oninput:e => { ui.search = e.target.value; ui.sel.clear(); ui.selS.clear(); renderBody(); }});
+  const seg = h('div', {class:'seg'},
+    h('button', {class:ui.view === 'table' ? 'on' : '', onclick:() => { ui.view = 'table'; render(); }}, 'Table'),
+    h('button', {class:ui.view === 'kanban' ? 'on' : '', onclick:() => { ui.view = 'kanban'; render(); }}, 'Kanban'));
+  const upd = h('button', {class:'btn', id:'updbtn', title:'Board updates', onclick:() => openUpdates({type:'board'})}, updLabel());
+  const gb = b.columns.find(c => c.id === ui.groupBy);
+  const hiddenN = b.columns.filter(c => c.hidden).length;
+  const tools = ui.view === 'table' ? [
+    h('button', {class:'btn', onclick:e => groupByMenu(e.currentTarget)}, gb ? 'Grouped by ' + gb.name : 'Group by'),
+    h('button', {class:'btn', onclick:e => hideMenu(e.currentTarget)}, hiddenN ? 'Hide (' + hiddenN + ')' : 'Hide')
+  ] : [];
+  return h('main', {class:'main'},
+    h('div', {class:'toolbar'},
+      iconBtn(ICON_SIDE, prefs().sideHidden ? 'Show sidebar' : 'Hide sidebar', toggleSidebar, 'sidebtn'),
+      h('button', {class:'title', title:'Rename board', onclick:() => ask('Rename board', 'Board name', b.name, v => { b.name = v; save(); render(); })}, b.name),
+      h('button', {class:'icon', title:'Board options', onclick:e => boardMenu(e.currentTarget)}, '⋯'),
+      h('div', {class:'spacer'}), upd, tools, seg, search,
+      iconBtn(effectiveDark() ? ICON_SUN : ICON_MOON, effectiveDark() ? 'Switch to light mode' : 'Switch to night mode', toggleTheme, 'themebtn')),
+    h('div', {id:'body'}));
+}
+function renderBody(){
+  hideTip();
+  const body = $('#body'); if (!body) return;
+  const old = body.querySelector('.scroll');
+  const st = old ? old.scrollTop : 0, sl = old ? old.scrollLeft : 0;
+  body.replaceChildren(ui.view === 'kanban' ? kanban() : table());
+  const n = body.querySelector('.scroll'); if (n){ n.scrollTop = st; n.scrollLeft = sl; }
+  renderBulk();
+}
+function render(){
+  closePop(); hideTip(); applyTheme();
+  $('#app').replaceChildren(sidebar(), mainEl());
+  renderBody(); updateNote();
+}
+
+/* ---------- automatic file backup (Chrome / Edge, e.g. a OneDrive folder) ---------- */
+const bk = {dir:null, perm:'none', last:null, err:null, busy:false, dirty:false, timer:null};
+const LATEST = 'prospect-board-latest.json';
+const bkSupported = () => typeof window.showDirectoryPicker === 'function' && typeof indexedDB !== 'undefined';
+const idb = {
+  open(){ return new Promise((res, rej) => { const r = indexedDB.open('prospect-board', 1); r.onupgradeneeded = () => r.result.createObjectStore('kv'); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); }); },
+  async get(k){ const db = await this.open(); return new Promise((res, rej) => { const q = db.transaction('kv').objectStore('kv').get(k); q.onsuccess = () => res(q.result); q.onerror = () => rej(q.error); }); },
+  async set(k, v){ const db = await this.open(); return new Promise((res, rej) => { const q = db.transaction('kv', 'readwrite').objectStore('kv').put(v, k); q.onsuccess = () => res(); q.onerror = () => rej(q.error); }); },
+  async del(k){ const db = await this.open(); return new Promise((res, rej) => { const q = db.transaction('kv', 'readwrite').objectStore('kv').delete(k); q.onsuccess = () => res(); q.onerror = () => rej(q.error); }); }
+};
+function ago2(ts){ const a = ago(ts); return a === 'now' ? 'just now' : (/^\d+[mhd]$/.test(a) ? a + ' ago' : a); }
+function countRecs(d){ let n = 0; (d.boards || []).forEach(b => (b.groups || []).forEach(g => (g.items || []).forEach(i => { n += 1 + (i.subs || []).length; }))); return n; }
+const stamp = () => new Date().toISOString().replace(/[:.]/g, '-');
+async function bkCheckPerm(ask){
+  if (!bk.dir) return false;
+  try {
+    let p = await bk.dir.queryPermission({mode:'readwrite'});
+    if (p !== 'granted' && ask) p = await bk.dir.requestPermission({mode:'readwrite'});
+    bk.perm = p; return p === 'granted';
+  } catch(e){ bk.perm = 'error'; return false; }
+}
+async function bkInit(){
+  if (!bkSupported()) return;
+  try { const d = await idb.get('dir'); if (d){ bk.dir = d; bk.last = await idb.get('last'); await bkCheckPerm(false); } } catch(e){}
+  updateNote();
+}
+async function bkRead(name){
+  try { const fh = await bk.dir.getFileHandle(name); return await (await fh.getFile()).text(); } catch(e){ return null; }
+}
+async function bkWrite(name, text){
+  const fh = await bk.dir.getFileHandle(name, {create:true});
+  const w = await fh.createWritable(); await w.write(text); await w.close();
+}
+async function bkPrune(){
+  const keep = Math.max(1, S.backupKeep || 30); const names = [];
+  for await (const [name] of bk.dir.entries()) if (/^prospect-board-\d{4}-\d{2}-\d{2}\.json$/.test(name)) names.push(name);
+  names.sort();
+  while (names.length > keep) await bk.dir.removeEntry(names.shift());
+}
+async function bkRun(){
+  if (!bk.dir || bk.busy) return;
+  if (bk.perm !== 'granted' && !(await bkCheckPerm(false))){ updateNote(); return; }
+  bk.busy = true; bk.dirty = false;
+  try {
+    const text = JSON.stringify(S, null, 2);
+    const prev = await bkRead(LATEST);
+    if (prev){
+      try { const old = countRecs(JSON.parse(prev)); if (old >= 10 && countRecs(S) < old * 0.5) await bkWrite('prospect-board-before-shrink-' + stamp() + '.json', prev); } catch(e){}
+    }
+    await bkWrite(LATEST, text);
+    const snap = 'prospect-board-' + todayISO() + '.json';
+    if (!(await bkRead(snap))) await bkWrite(snap, text);
+    await bkPrune();
+    bk.last = Date.now(); bk.err = null;
+    try { await idb.set('last', bk.last); } catch(e){}
+  } catch(e){ bk.err = String((e && e.message) || e); }
+  bk.busy = false; updateNote();
+}
+function bkSchedule(){
+  if (!bk.dir) return;
+  bk.dirty = true; clearTimeout(bk.timer); bk.timer = setTimeout(bkRun, 8000);
+}
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden' && bk.dirty){ clearTimeout(bk.timer); bkRun(); } });
+
+function restoreFromText(text){
+  const d = JSON.parse(text);
+  if (!d.boards || !d.boards.length) throw new Error('bad');
+  S = normalize(d); ui.sort = null; ui.groupBy = null; closePanel(); save(); render();
+}
+async function bkChoose(redraw){
+  try {
+    const dir = await window.showDirectoryPicker({id:'prospect-board-backup', mode:'readwrite'});
+    bk.dir = dir; bk.perm = 'granted'; bk.err = null;
+    await idb.set('dir', dir);
+    const prev = await bkRead(LATEST);
+    let found = null;
+    if (prev){ try { const d = JSON.parse(prev); if (d && d.boards) found = {n:countRecs(d), text:prev}; } catch(e){} }
+    if (found){
+      modal('A backup is already in this folder', h('p', {}, 'It holds ' + found.n + ' rows (companies and contacts). Your current data has ' + countRecs(S) + '. Restore the folder copy? If you keep your current data instead, the folder copy is first saved under a "before-shrink" name so nothing is lost.'),
+        [{label:'Keep current data', fn:() => { bkRun(); }}, {label:'Restore the folder copy', primary:true, fn:() => { try { restoreFromText(found.text); bkRun(); } catch(e){ toast('That backup could not be read.'); } }}]);
+    } else await bkRun();
+  } catch(e){ if (e && e.name !== 'AbortError') bk.err = String(e.message || e); }
+  updateNote(); if (redraw) redraw();
+}
+function openBackupModal(){
+  const body = h('div');
+  const draw = () => {
+    const rows = [];
+    if (!bkSupported()){
+      rows.push(h('p', {}, 'Automatic folder backup needs Chrome or Edge. In other browsers, use Data > Back up everything now and then.'));
+    } else {
+      rows.push(h('p', {style:{marginTop:0}}, 'Pick a folder inside your OneDrive. The app saves a current copy there a few seconds after you make changes, plus one dated copy per day. OneDrive then syncs it and keeps its own version history.'));
+      rows.push(h('p', {class:'note', style:{padding:0}}, 'Tip: create a new folder such as "ProspectBoardBackups". Chrome will not let you pick Documents or Desktop themselves.'));
+      rows.push(h('p', {}, h('b', {}, 'Folder: '), bk.dir ? bk.dir.name : 'Not set', h('br'),
+        h('b', {}, 'Access: '), !bk.dir ? '–' : (bk.perm === 'granted' ? 'OK' : 'Needs permission'), h('br'),
+        h('b', {}, 'Last backup: '), bk.last ? ago2(bk.last) + ' (' + new Date(bk.last).toLocaleString() + ')' : 'None yet'));
+      if (bk.err) rows.push(h('p', {style:{color:'var(--danger)'}}, 'Problem: ' + bk.err));
+      const keep = h('input', {type:'number', min:'1', max:'365', value:S.backupKeep || 30, style:{width:'90px'}, onchange:e => { S.backupKeep = Math.max(1, parseInt(e.target.value, 10) || 30); save(); }});
+      rows.push(h('label', {}, 'Keep this many daily copies'), keep);
+      const btns = h('div', {style:{display:'flex', gap:'8px', flexWrap:'wrap', marginTop:'14px'}});
+      btns.append(h('button', {class:'btn primary', onclick:() => bkChoose(draw)}, bk.dir ? 'Change folder' : 'Choose folder'));
+      if (bk.dir){
+        if (bk.perm !== 'granted') btns.append(h('button', {class:'btn', onclick:async () => { await bkCheckPerm(true); await bkRun(); draw(); }}, 'Reconnect'));
+        btns.append(h('button', {class:'btn', onclick:async () => { if (await bkCheckPerm(true)) await bkRun(); draw(); }}, 'Back up now'));
+        btns.append(h('button', {class:'btn', onclick:async () => {
+          if (!(await bkCheckPerm(true))) { draw(); return; }
+          const t = await bkRead(LATEST); if (!t){ toast('No backup file found in that folder.'); return; }
+          confirmBox('Replace everything in the app with the latest backup from the folder?', 'Restore', () => { try { restoreFromText(t); } catch(e){ toast('That backup could not be read.'); } });
+        }}, 'Restore latest'));
+        btns.append(h('button', {class:'btn danger', onclick:async () => { bk.dir = null; bk.perm = 'none'; try { await idb.del('dir'); } catch(e){} updateNote(); draw(); }}, 'Stop'));
+      }
+      rows.push(btns);
+    }
+    body.replaceChildren(...rows);
+  };
+  draw();
+  modal('Automatic backup', body, [{label:'Close'}]);
+}
+
+/* ---------- updates (long-form notes) ---------- */
+const BUBBLE = '<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/></svg>';
+function updLabel(){ const n = updsOf(board()).length; return 'Updates' + (n ? ' (' + n + ')' : ''); }
+function updBtn(p, rec){
+  const n = (rec.updates || []).length;
+  const btn = h('button', {class:'icon ubtn' + (n ? ' has' : ''), title:n ? n + (n === 1 ? ' update' : ' updates') : 'Add an update', 'aria-label':'Updates', onclick:() => openUpdates(p)});
+  btn.innerHTML = BUBBLE;
+  if (n) btn.append(h('span', {class:'ucount'}, n));
+  return btn;
+}
+function ago(ts){
+  const m = Math.floor((Date.now() - ts) / 60000);
+  if (m < 1) return 'now'; if (m < 60) return m + 'm';
+  const hr = Math.floor(m / 60); if (hr < 24) return hr + 'h';
+  const dy = Math.floor(hr / 24); if (dy < 30) return dy + 'd';
+  return new Date(ts).toLocaleDateString(undefined, {month:'short', day:'numeric', year:dy > 330 ? 'numeric' : undefined});
+}
+function initials(n){ const w = (n || 'Me').trim().split(/\s+/); return ((w[0][0] || '') + (w.length > 1 ? w[w.length - 1][0] : '')).toUpperCase(); }
+function linkify(text){
+  const out = []; const re = /(https?:\/\/[^\s<>"')]+)/g; let last = 0, m;
+  while ((m = re.exec(text))){
+    const url = m[1].replace(/[.,;:!?]+$/, '');
+    if (m.index > last) out.push(text.slice(last, m.index));
+    out.push(h('a', {href:url, target:'_blank', rel:'noopener noreferrer'}, url));
+    last = m.index + url.length; re.lastIndex = last;
+  }
+  if (last < text.length) out.push(text.slice(last));
+  return out;
+}
+function textBlock(text){
+  const long = text.length > 500 || text.split('\n').length > 9;
+  const box = h('div', {class:'utext' + (long ? ' clamp' : '')}, linkify(text));
+  if (!long) return box;
+  const more = h('button', {class:'linkbtn', style:{marginTop:'6px'}, onclick:() => { const c = box.classList; if (more.textContent === 'See more'){ box.className = 'utext'; more.textContent = 'See less'; } else { box.className = 'utext clamp'; more.textContent = 'See more'; } }}, 'See more');
+  return h('div', {}, box, more);
+}
+function resolveTarget(p){
+  const b = board();
+  if (p.type === 'board') return {rec:b, title:b.name, sub:'Board updates'};
+  const f = findItem(p.itemId); if (!f) return null;
+  if (p.type === 'item') return {rec:f.item, title:f.item.name || 'Untitled', sub:b.itemLabel + ' updates'};
+  const sb = subsOf(f.item).find(x => x.id === p.subId); if (!sb) return null;
+  return {rec:sb, title:sb.name || 'Untitled', sub:(f.item.name || b.itemLabel) + '  ›  ' + b.subLabel + ' updates'};
+}
+function openUpdates(p){ ui.panel = p; buildPanel(); const t = $('.ucomposer'); if (t) t.focus(); }
+function closePanel(){ ui.panel = null; const e = $('#updpanel'); if (e) e.remove(); }
+function afterUpdChange(){ renderBody(); const bt = $('#updbtn'); if (bt) bt.textContent = updLabel(); }
+function buildPanel(){
+  const old = $('#updpanel'); if (old) old.remove();
+  if (!ui.panel) return;
+  const t = resolveTarget(ui.panel); if (!t){ ui.panel = null; return; }
+  const arr = updsOf(t.rec);
+  const ta = h('textarea', {class:'ucomposer', rows:'3', placeholder:'Write an update. Long notes, email drafts, and links are fine.', 'aria-label':'New update'});
+  const list = h('div', {style:{display:'flex', flexDirection:'column', gap:'14px'}});
+  const post = () => {
+    const v = ta.value.trim(); if (!v) return;
+    arr.unshift({id:uid(), text:v, ts:Date.now(), author:S.author || 'Me', liked:false, replies:[]});
+    ta.value = ''; save(); fill(); afterUpdChange();
+  };
+  ta.addEventListener('keydown', e => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)){ e.preventDefault(); post(); } });
+  function meta(u, recArr, isReply, rerender){
+    const menu = e => popup(e.currentTarget,
+      menuItem('Edit', () => rerender('edit')),
+      menuItem('Delete', () => {
+        const idx = recArr.indexOf(u); recArr.splice(idx, 1); save(); fill(); afterUpdChange();
+        toast(isReply ? 'Reply deleted' : 'Update deleted', () => { recArr.splice(idx, 0, u); save(); fill(); afterUpdChange(); });
+      }, true));
+    return h('div', {class:'uauthor'},
+      h('div', {class:'avatar'}, initials(u.author)),
+      h('div', {class:'who'}, h('b', {}, u.author || 'Me'), h('span', {title:new Date(u.ts).toLocaleString()}, ago(u.ts) + (u.edited ? ' · edited' : ''))),
+      h('button', {class:'icon', title:'More', 'aria-label':'More', onclick:menu}, '⋯'));
+  }
+  function card(u, recArr, isReply){
+    const root = h('div', {class:isReply ? '' : 'ucard'});
+    const draw = mode => {
+      const body = h('div', {});
+      if (mode === 'edit'){
+        const eta = h('textarea', {class:'ucomposer', rows:'4', 'aria-label':'Edit update'}); eta.value = u.text;
+        body.append(eta, h('div', {class:'crow', style:{justifyContent:'flex-end'}},
+          h('button', {class:'btn', onclick:() => draw()}, 'Cancel'),
+          h('button', {class:'btn primary', onclick:() => { const v = eta.value.trim(); if (!v) return; u.text = v; u.edited = true; save(); fill(); }}, 'Save')));
+        setTimeout(() => eta.focus && eta.focus(), 0);
+      } else body.append(textBlock(u.text));
+      const inner = h('div', {class:isReply ? '' : 'uin'}, meta(u, recArr, isReply, draw), body);
+      root.replaceChildren(inner);
+      if (!isReply){
+        const replies = u.replies || (u.replies = []);
+        const rbox = h('div', {class:'ureplies' + (replies.length ? '' : ' hide')});
+        replies.forEach(r => rbox.append(card(r, replies, true)));
+        const rta = h('textarea', {class:'ucomposer', rows:'2', placeholder:'Write a reply', 'aria-label':'Reply'});
+        const sendReply = () => { const v = rta.value.trim(); if (!v) return; replies.push({id:uid(), text:v, ts:Date.now(), author:S.author || 'Me'}); save(); fill(); };
+        rta.addEventListener('keydown', e => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)){ e.preventDefault(); sendReply(); } });
+        const rcomp = h('div', {class:'hide', style:{padding:'0 14px 14px'}}, rta, h('div', {class:'crow', style:{justifyContent:'flex-end'}}, h('button', {class:'btn primary', onclick:sendReply}, 'Reply')));
+        root.append(rbox,
+          h('div', {class:'uacts'},
+            h('button', {class:u.liked ? 'on' : '', onclick:() => { u.liked = !u.liked; save(); fill(); }}, u.liked ? 'Liked' : 'Like'),
+            h('button', {onclick:() => { rcomp.classList.toggle('hide'); if (!rcomp.classList.contains('hide')) rta.focus(); }}, replies.length ? 'Reply (' + replies.length + ')' : 'Reply')),
+          rcomp);
+      }
+    };
+    draw();
+    return root;
+  }
+  function fill(){
+    list.replaceChildren(...(arr.length ? arr.map(u => card(u, arr, false)) : [h('div', {class:'uempty'}, 'No updates yet. Post the first one above.')]));
+  }
+  fill();
+  const who = h('button', {class:'linkbtn', onclick:() => ask('Your name', 'Shown on the updates you post', S.author || '', v => { S.author = v; save(); buildPanel(); })}, 'Posting as ' + (S.author || 'Me') + ' (change)');
+  const panel = h('aside', {class:'updpanel', id:'updpanel', role:'complementary', 'aria-label':'Updates'},
+    h('div', {class:'uhead'},
+      h('div', {class:'ut'}, h('small', {}, t.sub), h('h2', {}, t.title)),
+      h('button', {class:'icon', title:'Close', 'aria-label':'Close updates', onclick:closePanel}, '✕')),
+    h('div', {class:'ubodywrap'},
+      h('div', {}, ta, h('div', {class:'crow'}, who, h('button', {class:'btn primary', onclick:post}, 'Update'))),
+      list));
+  document.body.append(panel);
+}
+function exportUpdatesCSV(){
+  const b = board();
+  const rows = [['Level', b.itemLabel, b.subLabel, 'Author', 'Posted', 'Type', 'Text']];
+  const add = (lvl, iname, sname, rec) => updsOf(rec).forEach(u => {
+    rows.push([lvl, iname, sname, u.author, new Date(u.ts).toISOString(), 'Update', u.text]);
+    (u.replies || []).forEach(r => rows.push([lvl, iname, sname, r.author, new Date(r.ts).toISOString(), 'Reply', r.text]));
+  });
+  add('Board', '', '', b);
+  b.groups.forEach(g => g.items.forEach(i => { add(b.itemLabel, i.name, '', i); subsOf(i).forEach(sb => add(b.subLabel, i.name, sb.name, sb)); }));
+  download(b.name.replace(/[^\w\- ]+/g, '') + ' updates.csv', rows.map(r => r.map(csvEscape).join(',')).join('\r\n'), 'text/csv');
+}
+
+/* ---------- boot ---------- */
+(async () => {
+  S = await store.load();
+  if (!S || !S.boards || !S.boards.length) S = defaultState();
+  normalize(S);
+  render();
+  bkInit();
+})();
+</script>
+</body>
+</html>
