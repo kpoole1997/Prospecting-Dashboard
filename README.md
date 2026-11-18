@@ -1,4 +1,4 @@
-[README.md](https://github.com/user-attachments/files/34490936/README.md)
+[README.md](https://github.com/user-attachments/files/35051954/README.md)
 # Prospect Board
 
 A single-file prospecting dashboard for tracking companies and the contacts at each one. It works like a lightweight Monday.com-style board: groups, status labels, kanban, bulk editing, rich-text updates with file attachments, and undo history. There is no server, no account, and no subscription.
@@ -162,6 +162,14 @@ The board also has its own updates feed (the **Updates** button in the toolbar).
 ### History and undo
 
 The clock icon opens a list of recent changes in plain language ("Edited 'Status' on …", "Deleted 2 companies"). Click any step to go back to it, or use **Undo** and **Redo**. History keeps the last 60 steps and is cleared when you reload the page or restore a backup. Use the backups for longer-term recovery.
+
+### Industry/Category: standard list and automatic filling
+
+For a status column named **Industry/Category**:
+
+- **Data > Standardize Industry/Category…** replaces a long, inconsistent label list with a short standard list of 12 (Home Services & Construction, Healthcare & Senior Care, Hospitality/Dining/Entertainment, Retail & Consumer, Automotive, Financial/Insurance/Real Estate, Education, Nonprofit/Government/Associations, Professional & Personal Services, Transportation & Logistics, Manufacturing & Industrial, Other). It shows a preview first, moves existing companies to the matching new label, and fills in blank ones when the company name makes the industry clear. It can be undone.
+- **Every evening** (after 5 PM, or the next time you open the app if it was closed), companies with no category are filled in automatically using words in the company name and website address. Categories you have set yourself are never changed, and names that are unclear are left blank for you to choose. Turn it on or off, or run it immediately, from the **Data** menu.
+- The matching is a keyword-based guess, not a lookup, so check the result occasionally. It only runs while the app is open in a browser; nothing runs in the background.
 
 ### Everything else
 
